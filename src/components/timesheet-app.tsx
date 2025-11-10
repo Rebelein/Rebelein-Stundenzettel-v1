@@ -32,6 +32,7 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
   SidebarInset,
+  SidebarProvider,
 } from '@/components/ui/sidebar';
 import {
   Tooltip,
