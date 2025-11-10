@@ -57,7 +57,7 @@ export function AnalysisCalendar({ entries, user, currentDate }: AnalysisCalenda
       </div>
       <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: emptyCellsBefore }).map((_, index) => (
-          <div key={`empty-${index}`} className="border rounded-md bg-gray-50 h-24"></div>
+          <div key={`empty-${index}`} className="border rounded-md bg-gray-50 aspect-square"></div>
         ))}
         {days.map(day => {
           const dateString = format(day, 'yyyy-MM-dd');
@@ -81,18 +81,18 @@ export function AnalysisCalendar({ entries, user, currentDate }: AnalysisCalenda
             <div
               key={dateString}
               className={cn(
-                'border rounded-md h-24 p-2 flex flex-col',
+                'border rounded-md aspect-square p-1 flex flex-col text-xs',
                 dayBgClass,
                 isToday && 'border-2 border-blue-500'
               )}
             >
-              <span className="font-bold text-gray-800">{format(day, 'd')}</span>
+              <span className="font-bold text-gray-800 self-start">{format(day, 'd')}</span>
               {(actualHours > 0 || targetHours > 0) && (
-                <div className="mt-auto text-center">
-                    <span className={cn("font-bold text-lg", actualHours >= targetHours ? "text-green-700" : "text-red-700" )}>
+                <div className="m-auto flex flex-col items-center justify-center text-center">
+                    <span className={cn("font-bold text-base", actualHours >= targetHours ? "text-green-700" : "text-red-700" )}>
                         {actualHours.toFixed(1)}
                     </span>
-                    <span className="text-xs text-gray-500"> / {targetHours}h</span>
+                    <span className="text-gray-500">/ {targetHours}h</span>
                 </div>
               )}
             </div>
