@@ -100,6 +100,10 @@ export function TimesheetApp() {
             scale: 2, // Higher scale for better quality
             useCORS: true,
             logging: false,
+            width: page.offsetWidth,
+            height: page.offsetHeight,
+            windowWidth: page.scrollWidth,
+            windowHeight: page.scrollHeight
         });
 
         page.classList.remove('is-capturing');
@@ -114,7 +118,7 @@ export function TimesheetApp() {
             pdf.addPage();
         }
         
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight > pdfHeight ? pdfHeight : imgHeight);
     }
     
     const month = currentDate?.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) || 'Stundenzettel';
@@ -142,6 +146,7 @@ export function TimesheetApp() {
     <>
       <Sidebar collapsible="icon">
         <SidebarHeader>
+          <SheetTitle className="sr-only">Sidebar Navigation</SheetTitle>
           <div className="flex items-center gap-2">
              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                <FileClock className="size-5 text-primary" />

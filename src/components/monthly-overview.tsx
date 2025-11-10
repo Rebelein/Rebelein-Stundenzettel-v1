@@ -59,10 +59,6 @@ export function MonthlyOverview({
           <div
             key={pageIndex}
             className="a4-page-container mx-auto my-4 md:my-8 bg-gray-300 shadow-2xl relative scale-[0.6] lg:scale-[0.8] xl:scale-100 origin-top"
-            style={{ 
-              width: '210mm', 
-              height: '297mm',
-            }}
           >
             {page.map((day, dayIndex) => {
               const dayEntries = entries.filter(
@@ -72,12 +68,10 @@ export function MonthlyOverview({
               return (
                 <div 
                   key={day.toISOString()} 
-                  className="absolute"
+                  className="a5-container absolute"
                   style={{
                     top: '0',
                     left: dayIndex === 0 ? '0' : '148mm',
-                    width: '148mm',
-                    height: '210mm'
                   }}
                 >
                   <TimesheetDay
