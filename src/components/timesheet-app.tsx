@@ -153,14 +153,13 @@ export function TimesheetApp() {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        {/* The onClick is temporarily removed and disabled is added */}
-                        <Button variant="outline" size="icon" disabled>
+                        <Button variant="outline" size="icon" onClick={handlePrint}>
                           <Download className="h-4 w-4" />
                           <span className="sr-only">PDF Herunterladen</span>
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Hier wird noch kein Download erzeugt</p>
+                        <p>Als PDF drucken</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
