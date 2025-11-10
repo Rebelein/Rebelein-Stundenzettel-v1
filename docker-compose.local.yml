@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/rebelein/rebelein-stundenzettel:latest
+    image: docker.io/rebelein/stundenzettel:latest
     restart: unless-stopped
     ports:
       - "3000:3000"
