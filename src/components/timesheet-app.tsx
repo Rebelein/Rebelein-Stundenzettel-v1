@@ -20,6 +20,7 @@ import {
   FileClock,
   LayoutGrid,
   Plus,
+  Loader2
 } from 'lucide-react';
 import {
   Sidebar,
@@ -37,6 +38,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 
 type View = 'new-entry' | 'overview';
@@ -46,6 +49,7 @@ export function TimesheetApp() {
   const [selectedUserId, setSelectedUserId] = useState<string>(users[0]?.id || '');
   const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
   const [activeView, setActiveView] = useState<View>('new-entry');
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     // Set initial date only on the client to avoid hydration mismatch
@@ -71,8 +75,52 @@ export function TimesheetApp() {
     setActiveView('overview'); // Switch to overview after adding entry
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handleDownloadPdf = async () => {
+    const printArea = document.getElementById('print-area');
+    if (!printArea) {
+      console.error("Print area not found");
+      return;
+    }
+    
+    setIsDownloading(true);
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    
+    const pages = printArea.querySelectorAll<HTMLElement>('.a4-page-container');
+    
+    for (let i = 0; i < pages.length; i++) {
+        const page = pages[i];
+        
+        // Temporarily apply a class to ensure visibility for capturing
+        page.classList.add('is-capturing');
+
+        const canvas = await html2canvas(page, {
+            scale: 2, // Higher scale for better quality
+            useCORS: true,
+            logging: false,
+        });
+
+        page.classList.remove('is-capturing');
+        
+        const imgData = canvas.toDataURL('image/png');
+
+        // A4 aspect ratio
+        const imgWidth = pdfWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        if (i > 0) {
+            pdf.addPage();
+        }
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+    }
+    
+    const month = currentDate?.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) || 'Stundenzettel';
+    pdf.save(`Stundenzettel-${selectedUser?.name?.replace(' ','_')}-${month}.pdf`);
+
+    setIsDownloading(false);
   };
   
   const changeMonth = (amount: number) => {
@@ -153,13 +201,17 @@ export function TimesheetApp() {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon" onClick={handlePrint}>
-                          <Download className="h-4 w-4" />
+                        <Button variant="outline" size="icon" onClick={handleDownloadPdf} disabled={isDownloading}>
+                          {isDownloading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4" />
+                          )}
                           <span className="sr-only">PDF Herunterladen</span>
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Als PDF drucken</p>
+                        <p>Als PDF herunterladen</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>

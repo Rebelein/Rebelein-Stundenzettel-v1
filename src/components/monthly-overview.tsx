@@ -58,7 +58,7 @@ export function MonthlyOverview({
         {printPages.map((page, pageIndex) => (
           <div
             key={pageIndex}
-            className="a4-page-container mx-auto my-4 md:my-8 bg-gray-300 shadow-2xl relative scale-[0.8] lg:scale-100 origin-top"
+            className="a4-page-container mx-auto my-4 md:my-8 bg-gray-300 shadow-2xl relative scale-[0.6] lg:scale-[0.8] xl:scale-100 origin-top"
             style={{ 
               width: '210mm', 
               height: '297mm',
