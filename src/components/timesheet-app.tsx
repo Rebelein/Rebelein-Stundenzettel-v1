@@ -92,7 +92,6 @@ export function TimesheetApp() {
     for (let i = 0; i < pages.length; i++) {
         const page = pages[i];
         
-        // Temporarily apply a class to ensure it's rendered for capture
         page.classList.add('is-capturing');
 
         const canvas = await html2canvas(page, {
@@ -105,7 +104,6 @@ export function TimesheetApp() {
             windowHeight: page.scrollHeight
         });
 
-        // Remove the class after capture
         page.classList.remove('is-capturing');
         
         const imgData = canvas.toDataURL('image/png');
