@@ -89,10 +89,10 @@ export function AnalysisCalendar({ entries, user, currentDate }: AnalysisCalenda
               <span className="font-bold text-gray-800 self-start">{format(day, 'd')}</span>
               {(actualHours > 0 || targetHours > 0) && (
                 <div className="m-auto flex flex-col items-center justify-center text-center">
-                    <span className={cn("font-bold text-sm", actualHours >= targetHours ? "text-green-700" : "text-red-700" )}>
+                    <span className={cn("font-bold text-xs", actualHours >= targetHours ? "text-green-700" : "text-red-700" )}>
                         {actualHours.toFixed(2)}
                     </span>
-                    <span className="text-gray-500 text-xs">/ {targetHours}h</span>
+                    <span className="text-gray-500 text-[10px]">/ {targetHours}h</span>
                 </div>
               )}
             </div>
