@@ -26,16 +26,14 @@ export function MonthlyOverview({
   }
 
   return (
-    <div id="print-area" className="py-8">
+    <div id="print-area" className="py-4 md:py-8">
       {pages.map((page, pageIndex) => (
         <div
           key={pageIndex}
-          className="a4-page-container mx-auto my-8 bg-gray-300 shadow-2xl relative"
+          className="a4-page-container mx-auto my-4 md:my-8 bg-gray-300 shadow-2xl relative scale-[0.4] sm:scale-[0.5] md:scale-[0.6] lg:scale-[0.8] origin-top"
           style={{ 
             width: '210mm', 
             height: '297mm',
-            transform: 'scale(0.4)',
-            transformOrigin: 'top center'
           }}
         >
           {page.map((day, dayIndex) => {
@@ -47,7 +45,7 @@ export function MonthlyOverview({
                 key={day.toISOString()} 
                 className="absolute"
                 style={{
-                  top: dayIndex % 2 === 0 ? '0' : '0',
+                  top: '0',
                   left: dayIndex % 2 === 0 ? '0' : '148mm',
                   width: '148mm',
                   height: '210mm'

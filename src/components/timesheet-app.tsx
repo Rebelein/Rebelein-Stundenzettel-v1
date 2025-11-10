@@ -75,9 +75,9 @@ export function TimesheetApp() {
             <FileClock className="h-8 w-8 text-primary" />
             <h1>Stundenzettel Meister</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex w-full md:w-auto items-center gap-4">
              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full md:w-[200px]">
                 <SelectValue placeholder="Benutzer auswählen" />
               </SelectTrigger>
               <SelectContent>
@@ -101,14 +101,14 @@ export function TimesheetApp() {
             <Button variant="outline" size="icon" onClick={() => changeMonth(-1)}>
                 <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-lg font-medium font-headline w-48 text-center">{formattedMonth}</span>
+            <span className="text-lg font-medium font-headline w-40 text-center">{formattedMonth}</span>
             <Button variant="outline" size="icon" onClick={() => changeMonth(1)}>
                 <ChevronRight className="h-4 w-4" />
             </Button>
         </div>
       </div>
 
-      <div className="mt-[-100vh] print:mt-0">
+      <div className="mt-[-90vh] sm:mt-[-80vh] md:mt-[-60vh] lg:mt-[-30vh] print:mt-0">
         <MonthlyOverview
           entries={userEntries}
           user={selectedUser}
