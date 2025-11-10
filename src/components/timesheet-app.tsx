@@ -2,17 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import type { User, TimeEntry } from '@/lib/types';
-import { users as mockUsers, initialEntries } from '@/lib/data';
+import { useAuth } from './auth-provider';
+import { supabase } from '@/lib/supabaseClient';
 import { TimeEntryForm } from './time-entry-form';
 import { MonthlyOverview } from './monthly-overview';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   ChevronLeft,
   ChevronRight,
@@ -21,8 +15,8 @@ import {
   LayoutGrid,
   Plus,
   Loader2,
-  Users,
   BarChart,
+  LogOut,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -53,83 +47,115 @@ import { WorkHoursAnalysis } from './work-hours-analysis';
 type View = 'new-entry' | 'overview' | 'users' | 'analysis';
 
 export function TimesheetApp() {
+  const { user: authUser } = useAuth();
   const [allEntries, setAllEntries] = useState<TimeEntry[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<string | undefined>(undefined);
-  const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
-  const [downloadStartDate, setDownloadStartDate] = useState<Date | undefined>(undefined);
-  const [downloadEndDate, setDownloadEndDate] = useState<Date | undefined>(undefined);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [currentDate, setCurrentDate] = useState<Date | undefined>(new Date());
+  const [downloadStartDate, setDownloadStartDate] = useState<Date | undefined>(startOfMonth(new Date()));
+  const [downloadEndDate, setDownloadEndDate] = useState<Date | undefined>(endOfMonth(new Date()));
   const [activeView, setActiveView] = useState<View>('new-entry');
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
-    // Load data from localStorage on the client
-    const storedUsers = localStorage.getItem('timesheet_users');
-    const storedEntries = localStorage.getItem('timesheet_entries');
+    if (!authUser) return;
 
-    const loadedUsers = storedUsers ? JSON.parse(storedUsers) : mockUsers;
-    const loadedEntries = storedEntries ? JSON.parse(storedEntries) : initialEntries;
+    const fetchInitialData = async () => {
+      // Fetch user profile
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
 
-    setUsers(loadedUsers);
-    setAllEntries(loadedEntries);
+      if (userError) console.error('Error fetching user:', userError);
+      else setSelectedUser(userData);
 
-    if (loadedUsers.length > 0) {
-      setSelectedUserId(loadedUsers[0].id);
-    }
-    
-    const now = new Date();
-    setCurrentDate(now);
-    setDownloadStartDate(startOfMonth(now));
-    setDownloadEndDate(endOfMonth(now));
-  }, []);
+      // Fetch time entries
+      const { data: entriesData, error: entriesError } = await supabase
+        .from('time_entries')
+        .select('*')
+        .eq('user_id', authUser.id);
 
-  useEffect(() => {
-    // Save data to localStorage whenever it changes
-    if (users.length > 0) {
-      localStorage.setItem('timesheet_users', JSON.stringify(users));
-    }
-    if (allEntries.length > 0) {
-      localStorage.setItem('timesheet_entries', JSON.stringify(allEntries));
-    }
-  }, [users, allEntries]);
+      if (entriesError) console.error('Error fetching entries:', entriesError);
+      else setAllEntries(entriesData || []);
+    };
 
-  const selectedUser = users.find((u) => u.id === selectedUserId);
-  const userEntries = allEntries.filter((e) => e.userId === selectedUserId).filter(entry => {
+    fetchInitialData();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('time_entries')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'time_entries', filter: `user_id=eq.${authUser.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setAllEntries((prev) => [...prev, payload.new as TimeEntry]);
+          }
+          if (payload.eventType === 'UPDATE') {
+            setAllEntries((prev) =>
+              prev.map((e) => (e.id === payload.new.id ? (payload.new as TimeEntry) : e))
+            );
+          }
+          if (payload.eventType === 'DELETE') {
+            setAllEntries((prev) => prev.filter((e) => e.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [authUser]);
+
+  const userEntries = allEntries.filter((e) => e.userId === selectedUser?.id).filter(entry => {
       if (!currentDate) return false;
       const entryDate = new Date(entry.date);
       return entryDate.getFullYear() === currentDate.getFullYear() && entryDate.getMonth() === currentDate.getMonth();
   });
 
 
-  const addEntry = (newEntry: {
+  const addEntry = async (newEntry: {
     date: Date;
     customer: string;
     hours: number;
   }) => {
-    if (!selectedUserId) return;
-    const entry: TimeEntry = {
+    if (!authUser) return;
+    const { error } = await supabase.from('time_entries').insert({
       ...newEntry,
-      id: `e${Date.now()}`,
       date: newEntry.date.toISOString().split('T')[0],
-      userId: selectedUserId,
-    };
-    setAllEntries((prev) => [...prev, entry]);
-    setCurrentDate(newEntry.date);
+      user_id: authUser.id,
+    });
+    if (error) {
+      console.error("Error adding entry:", error);
+    } else {
+      setCurrentDate(newEntry.date);
+    }
   };
   
-  const updateEntry = (updatedEntry: TimeEntry) => {
-    setAllEntries(prev => prev.map(e => e.id === updatedEntry.id ? updatedEntry : e));
+  const updateEntry = async (updatedEntry: TimeEntry) => {
+    const { error } = await supabase
+      .from('time_entries')
+      .update({
+        date: updatedEntry.date,
+        customer: updatedEntry.customer,
+        hours: updatedEntry.hours,
+      })
+      .eq('id', updatedEntry.id);
+    if (error) console.error('Error updating entry:', error);
   };
   
-  const deleteEntry = (entryId: string) => {
-     setAllEntries(prev => prev.filter(e => e.id !== entryId));
+  const deleteEntry = async (entryId: string) => {
+     const { error } = await supabase.from('time_entries').delete().eq('id', entryId);
+     if (error) console.error("Error deleting entry:", error);
   }
 
   const handleDownloadPdf = async () => {
     if (!selectedUser || !currentDate || !downloadStartDate || !downloadEndDate) return;
 
     const entriesToDownload = allEntries.filter(entry => {
-        if (entry.userId !== selectedUserId) return false;
+        if (entry.userId !== selectedUser?.id) return false;
         const entryDate = new Date(entry.date);
         const inclusiveEndDate = new Date(downloadEndDate);
         inclusiveEndDate.setDate(inclusiveEndDate.getDate() + 1);
@@ -242,32 +268,6 @@ export function TimesheetApp() {
     });
   };
 
-  const addUser = (name: string, targetHours: User['targetHours']) => {
-    const newUser: User = { id: `u${Date.now()}`, name, targetHours };
-    setUsers(prev => [...prev, newUser]);
-  };
-
-  const updateUser = (updatedUser: User) => {
-    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
-    if (selectedUserId === updatedUser.id) {
-       // Just to trigger a re-render if the name of the selected user changes
-       setSelectedUserId(updatedUser.id);
-    }
-  };
-
-  const deleteUser = (userId: string) => {
-    // Also delete all entries for this user
-    setAllEntries(prev => prev.filter(e => e.userId !== userId));
-    setUsers(prev => {
-      const newUsers = prev.filter(u => u.id !== userId);
-      // If the deleted user was the selected one, select the first user if available
-      if (selectedUserId === userId) {
-        setSelectedUserId(newUsers[0]?.id);
-      }
-      return newUsers;
-    });
-  };
-
   const formattedMonth = currentDate?.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) || '';
   
   const viewTitles: Record<View, string> = {
@@ -324,18 +324,18 @@ export function TimesheetApp() {
                   Analyse
                 </SidebarMenuButton>
               </SidebarMenuItem>
-               <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={() => setActiveView('users')}
-                  isActive={activeView === 'users'}
-                  tooltip="Benutzer verwalten"
-                >
-                  <Users />
-                  Benutzer
+            </SidebarMenu>
+          </SidebarContent>
+          <SidebarHeader>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => supabase.auth.signOut()} tooltip="Abmelden">
+                  <LogOut />
+                  Abmelden
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
-          </SidebarContent>
+          </SidebarHeader>
         </Sidebar>
         <SidebarInset>
            <div className="container mx-auto p-4 md:p-8">
@@ -346,33 +346,11 @@ export function TimesheetApp() {
                   <h1 className="text-2xl md:text-3xl font-headline font-bold">
                     {viewTitles[activeView]}
                   </h1>
-                </div>
-                <div className="flex w-full md:w-auto items-center gap-4">
-                   <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                    <SelectTrigger className="w-full md:w-[200px]">
-                      <SelectValue placeholder="Benutzer auswählen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {users.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                 </div>
+                 <p className="text-muted-foreground">{selectedUser?.name}</p>
               </header>
 
               {activeView === 'new-entry' && <TimeEntryForm addEntry={addEntry} />}
-              
-              {activeView === 'users' && (
-                <UserManagement 
-                  users={users}
-                  addUser={addUser}
-                  updateUser={updateUser}
-                  deleteUser={deleteUser}
-                />
-              )}
               
               {(activeView === 'overview' || activeView === 'analysis') && (
                 <div className="space-y-4">
