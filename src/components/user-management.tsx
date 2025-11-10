@@ -52,7 +52,7 @@ export function UserManagement({ users, addUser, updateUser, deleteUser }: UserM
   useEffect(() => {
     if (editingUser) {
         setEditingName(editingUser.name);
-        setEditingTargetHours(editingUser.targetHours);
+        setEditingTargetHours(editingUser.targetHours || defaultTargetHours);
     }
   }, [editingUser]);
 
@@ -96,14 +96,14 @@ export function UserManagement({ users, addUser, updateUser, deleteUser }: UserM
   ) => {
       return (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
-              {(Object.keys(hours) as Weekday[]).map(day => (
+              {(Object.keys(defaultTargetHours) as Weekday[]).map(day => (
                    <div key={day} className="grid gap-1.5">
                        <Label htmlFor={`${day}-hours`}>{day.charAt(0).toUpperCase() + day.slice(1)}</Label>
                        <Input
                            id={`${day}-hours`}
                            type="number"
                            step="0.5"
-                           value={hours[day]}
+                           value={hours?.[day] || 0}
                            onChange={(e) => setter(prev => ({ ...prev, [day]: parseFloat(e.target.value) || 0 }))}
                        />
                    </div>
@@ -171,11 +171,11 @@ export function UserManagement({ users, addUser, updateUser, deleteUser }: UserM
                       <div>
                         <p className="font-semibold">{user.name}</p>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground mt-2">
-                          <span>Mo: {user.targetHours.monday}h</span>
-                          <span>Di: {user.targetHours.tuesday}h</span>
-                          <span>Mi: {user.targetHours.wednesday}h</span>
-                          <span>Do: {user.targetHours.thursday}h</span>
-                          <span>Fr: {user.targetHours.friday}h</span>
+                          <span>Mo: {user.targetHours?.monday || 0}h</span>
+                          <span>Di: {user.targetHours?.tuesday || 0}h</span>
+                          <span>Mi: {user.targetHours?.wednesday || 0}h</span>
+                          <span>Do: {user.targetHours?.thursday || 0}h</span>
+                          <span>Fr: {user.targetHours?.friday || 0}h</span>
                         </div>
                       </div>
                       <div className="flex-shrink-0">
