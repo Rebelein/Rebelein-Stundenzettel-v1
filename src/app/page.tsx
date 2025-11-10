@@ -1,3 +1,9 @@
+import { TimesheetApp } from '@/components/timesheet-app';
+
 export default function Home() {
-  return <></>;
+  return (
+    <main>
+      <TimesheetApp />
+    </main>
+  );
 }
