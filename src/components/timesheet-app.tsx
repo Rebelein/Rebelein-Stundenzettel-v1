@@ -94,8 +94,12 @@ export function TimesheetApp() {
     for (let i = 0; i < pages.length; i++) {
         const page = pages[i];
         
-        // Temporarily apply a class to ensure visibility for capturing
-        page.classList.add('is-capturing');
+        // Temporarily modify styles for capturing
+        const originalTransform = page.style.transform;
+        const originalBg = page.style.backgroundColor;
+        page.style.transform = 'scale(1)';
+        page.style.backgroundColor = 'white';
+
 
         const canvas = await html2canvas(page, {
             scale: 2, // Higher scale for better quality
@@ -103,15 +107,18 @@ export function TimesheetApp() {
             logging: false,
             width: page.offsetWidth,
             height: page.offsetHeight,
-            windowWidth: page.scrollWidth,
-            windowHeight: page.scrollHeight
+            windowWidth: document.documentElement.scrollWidth,
+            windowHeight: document.documentElement.scrollHeight,
+            scrollX: 0,
+            scrollY: 0,
         });
 
-        page.classList.remove('is-capturing');
+        // Restore original styles
+        page.style.transform = originalTransform;
+        page.style.backgroundColor = originalBg;
         
         const imgData = canvas.toDataURL('image/png');
 
-        // A4 aspect ratio
         const imgWidth = pdfWidth;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
