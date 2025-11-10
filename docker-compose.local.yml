@@ -1,6 +1,6 @@
 services:
   app:
-    image: docker.io/rebelein/stundenzettel:latest
+    image: docker.io/bbging/stundenzettel:latest
     restart: unless-stopped
     ports:
       - "3001:3000"
