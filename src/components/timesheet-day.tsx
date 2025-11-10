@@ -23,6 +23,17 @@ import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { EditTimeEntryDialog } from './edit-time-entry-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface TimesheetDayProps {
   date: Date;
@@ -76,9 +87,25 @@ export function TimesheetDay({ date, user, entries, updateEntry, deleteEntry }: 
                     <Button variant="ghost" size="icon" onClick={() => setEditingEntry(entry)}>
                         <Pencil className="h-4 w-4 text-blue-500" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => deleteEntry(entry.id)}>
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
+                     <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                         <Button variant="ghost" size="icon">
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Eintrag wirklich löschen?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Diese Aktion kann nicht rückgängig gemacht werden. Der Zeiteintrag wird dauerhaft gelöscht.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteEntry(entry.id)}>Löschen</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))
@@ -113,7 +140,10 @@ export function TimesheetDay({ date, user, entries, updateEntry, deleteEntry }: 
         <EditTimeEntryDialog 
             entry={editingEntry}
             onClose={() => setEditingEntry(null)}
-            onSave={updateEntry}
+            onSave={(updatedEntry) => {
+                updateEntry(updatedEntry);
+                setEditingEntry(null);
+            }}
         />
     )}
     </>

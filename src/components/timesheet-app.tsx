@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { User, TimeEntry } from '@/lib/types';
-import { users, initialEntries } from '@/lib/data';
+import { users as mockUsers, initialEntries } from '@/lib/data';
 import { TimeEntryForm } from './time-entry-form';
 import { MonthlyOverview } from './monthly-overview';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,8 @@ import {
   FileClock,
   LayoutGrid,
   Plus,
-  Loader2
+  Loader2,
+  Users
 } from 'lucide-react';
 import {
   Sidebar,
@@ -31,7 +32,6 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
   SidebarInset,
-  SidebarProvider,
 } from '@/components/ui/sidebar';
 import {
   Tooltip,
@@ -44,13 +44,15 @@ import { Label } from '@/components/ui/label';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { UserManagement } from './user-management';
 
 
-type View = 'new-entry' | 'overview';
+type View = 'new-entry' | 'overview' | 'users';
 
 export function TimesheetApp() {
-  const [allEntries, setAllEntries] = useState<TimeEntry[]>(initialEntries);
-  const [selectedUserId, setSelectedUserId] = useState<string>(users[0]?.id || '');
+  const [allEntries, setAllEntries] = useState<TimeEntry[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string | undefined>(undefined);
   const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
   const [downloadStartDate, setDownloadStartDate] = useState<Date | undefined>(undefined);
   const [downloadEndDate, setDownloadEndDate] = useState<Date | undefined>(undefined);
@@ -58,12 +60,31 @@ export function TimesheetApp() {
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
-    // Set initial date only on the client to avoid hydration mismatch
+    // Load data from localStorage on the client
+    const storedUsers = localStorage.getItem('timesheet_users');
+    const storedEntries = localStorage.getItem('timesheet_entries');
+
+    const loadedUsers = storedUsers ? JSON.parse(storedUsers) : mockUsers;
+    const loadedEntries = storedEntries ? JSON.parse(storedEntries) : initialEntries;
+
+    setUsers(loadedUsers);
+    setAllEntries(loadedEntries);
+
+    if (loadedUsers.length > 0) {
+      setSelectedUserId(loadedUsers[0].id);
+    }
+    
     const now = new Date();
     setCurrentDate(now);
     setDownloadStartDate(startOfMonth(now));
     setDownloadEndDate(endOfMonth(now));
   }, []);
+
+  useEffect(() => {
+    // Save data to localStorage whenever it changes
+    localStorage.setItem('timesheet_users', JSON.stringify(users));
+    localStorage.setItem('timesheet_entries', JSON.stringify(allEntries));
+  }, [users, allEntries]);
 
   const selectedUser = users.find((u) => u.id === selectedUserId);
   const userEntries = allEntries.filter((e) => e.userId === selectedUserId).filter(entry => {
@@ -103,7 +124,6 @@ export function TimesheetApp() {
     const entriesToDownload = allEntries.filter(entry => {
         if (entry.userId !== selectedUserId) return false;
         const entryDate = new Date(entry.date);
-        // Add a day to end date to make it inclusive
         const inclusiveEndDate = new Date(downloadEndDate);
         inclusiveEndDate.setDate(inclusiveEndDate.getDate() + 1);
         return entryDate >= downloadStartDate && entryDate < inclusiveEndDate;
@@ -136,7 +156,6 @@ export function TimesheetApp() {
         });
         
         const a5Width = 148;
-        const a5Height = 210;
         const margin = 15;
 
         // Header
@@ -180,7 +199,7 @@ export function TimesheetApp() {
         const finalY = (doc as any).lastAutoTable.finalY;
 
         // Footer Signatures
-        const signatureY = a5Height - margin - 15;
+        const signatureY = 210 - margin - 15;
         doc.line(xOffset + margin, signatureY, xOffset + margin + 50, signatureY);
         doc.text('Unterschrift', xOffset + margin, signatureY + 5);
 
@@ -192,10 +211,8 @@ export function TimesheetApp() {
       if (i > 0) {
         doc.addPage();
       }
-      // Draw left A5 page
       drawTimesheet(sortedDays[i], 0);
 
-      // Draw right A5 page if it exists
       if (sortedDays[i + 1]) {
         drawTimesheet(sortedDays[i + 1], 148.5);
       }
@@ -215,6 +232,32 @@ export function TimesheetApp() {
       setDownloadStartDate(startOfMonth(newDate));
       setDownloadEndDate(endOfMonth(newDate));
       return newDate;
+    });
+  };
+
+  const addUser = (name: string) => {
+    const newUser: User = { id: `u${Date.now()}`, name };
+    setUsers(prev => [...prev, newUser]);
+  };
+
+  const updateUser = (updatedUser: User) => {
+    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+    if (selectedUserId === updatedUser.id) {
+       // Just to trigger a re-render if the name of the selected user changes
+       setSelectedUserId(updatedUser.id);
+    }
+  };
+
+  const deleteUser = (userId: string) => {
+    // Also delete all entries for this user
+    setAllEntries(prev => prev.filter(e => e.userId !== userId));
+    setUsers(prev => {
+      const newUsers = prev.filter(u => u.id !== userId);
+      // If the deleted user was the selected one, select the first user if available
+      if (selectedUserId === userId) {
+        setSelectedUserId(newUsers[0]?.id);
+      }
+      return newUsers;
     });
   };
 
@@ -257,6 +300,16 @@ export function TimesheetApp() {
                   Monatsübersicht
                 </SidebarMenuButton>
               </SidebarMenuItem>
+               <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => setActiveView('users')}
+                  isActive={activeView === 'users'}
+                  tooltip="Benutzer verwalten"
+                >
+                  <Users />
+                  Benutzer
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
@@ -267,7 +320,8 @@ export function TimesheetApp() {
                  <div className="flex items-center gap-2">
                   <SidebarTrigger className="md:hidden" />
                   <h1 className="text-2xl md:text-3xl font-headline font-bold">
-                    {activeView === 'new-entry' ? 'Neuer Eintrag' : 'Monatsübersicht'}
+                    {activeView === 'new-entry' ? 'Neuer Eintrag' : 
+                     activeView === 'overview' ? 'Monatsübersicht' : 'Benutzerverwaltung'}
                   </h1>
                 </div>
                 <div className="flex w-full md:w-auto items-center gap-4">
@@ -287,6 +341,15 @@ export function TimesheetApp() {
               </header>
 
               {activeView === 'new-entry' && <TimeEntryForm addEntry={addEntry} />}
+              
+              {activeView === 'users' && (
+                <UserManagement 
+                  users={users}
+                  addUser={addUser}
+                  updateUser={updateUser}
+                  deleteUser={deleteUser}
+                />
+              )}
               
               {activeView === 'overview' && (
                 <div className="space-y-4">
