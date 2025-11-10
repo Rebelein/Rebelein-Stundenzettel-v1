@@ -168,7 +168,7 @@ const Sidebar = React.forwardRef<
     {
       side = "left",
       variant = "sidebar",
-      collapsible = "offcanvas",
+      collapsible = "icon",
       className,
       children,
       ...props
@@ -176,7 +176,7 @@ const Sidebar = React.forwardRef<
     ref
   ) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
-
+    
     if (collapsible === "none") {
       return (
         <div
@@ -192,25 +192,24 @@ const Sidebar = React.forwardRef<
       )
     }
     
-    if (isMobile) {
+    if (isMobile && collapsible !== "offcanvas") {
       return (
-        <Sheet open={openMobile} onOpenChange={setOpenMobile}>
-            <SheetContent
-              data-sidebar="sidebar"
-              data-mobile="true"
-              className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
-              style={
-                {
-                  "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-                } as React.CSSProperties
-              }
-              side={side}
-              {...props}
-            >
-              <SheetTitle className="sr-only">Sidebar Navigation</SheetTitle>
-              <div className="flex h-full w-full flex-col">{children}</div>
-            </SheetContent>
-          </Sheet>
+          <Sheet open={openMobile} onOpenChange={setOpenMobile}>
+              <SheetContent
+                data-sidebar="sidebar"
+                data-mobile="true"
+                className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+                style={
+                  {
+                    "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+                  } as React.CSSProperties
+                }
+                side={side}
+                {...props}
+              >
+                <div className="flex h-full w-full flex-col">{children}</div>
+              </SheetContent>
+            </Sheet>
       )
     }
 

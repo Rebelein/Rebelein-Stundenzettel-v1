@@ -43,11 +43,9 @@ import { SheetTitle } from '@/components/ui/sheet';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-
 type View = 'new-entry' | 'overview';
 
-function AppContent() {
-  const { isMobile } = useSidebar();
+export function TimesheetApp() {
   const [allEntries, setAllEntries] = useState<TimeEntry[]>(initialEntries);
   const [selectedUserId, setSelectedUserId] = useState<string>(users[0]?.id || '');
   const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
@@ -96,18 +94,20 @@ function AppContent() {
     for (let i = 0; i < pages.length; i++) {
         const page = pages[i];
         
+        const originalTransform = page.style.transform;
         page.style.transform = 'scale(1)';
         page.style.backgroundColor = 'white';
 
         const canvas = await html2canvas(page, {
-            scale: 2,
+            scale: 2, // Higher scale for better quality
             useCORS: true,
             logging: false,
             width: page.offsetWidth,
             height: page.offsetHeight,
         });
 
-        page.style.transform = '';
+        // Restore original style
+        page.style.transform = originalTransform;
         page.style.backgroundColor = '';
         
         const imgData = canvas.toDataURL('image/png');
@@ -144,7 +144,7 @@ function AppContent() {
   
   return (
     <>
-     <Sidebar collapsible={isMobile ? "offcanvas" : "icon"}>
+      <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2">
              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
@@ -152,6 +152,7 @@ function AppContent() {
              </Button>
             <span className="text-lg font-bold font-headline">Stundenzettel</span>
           </div>
+          <SheetTitle className="sr-only">Sidebar Navigation</SheetTitle>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
@@ -251,9 +252,4 @@ function AppContent() {
       </SidebarInset>
     </>
   )
-}
-
-
-export function TimesheetApp() {
-  return <AppContent />
 }
