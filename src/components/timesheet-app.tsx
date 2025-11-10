@@ -31,7 +31,6 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
   SidebarInset,
-  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   Tooltip,
@@ -39,7 +38,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { SheetTitle } from '@/components/ui/sheet';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -94,21 +92,21 @@ export function TimesheetApp() {
     for (let i = 0; i < pages.length; i++) {
         const page = pages[i];
         
-        const originalTransform = page.style.transform;
-        page.style.transform = 'scale(1)';
-        page.style.backgroundColor = 'white';
+        // Temporarily apply a class to ensure it's rendered for capture
+        page.classList.add('is-capturing');
 
         const canvas = await html2canvas(page, {
-            scale: 2, // Higher scale for better quality
+            scale: 2, 
             useCORS: true,
             logging: false,
             width: page.offsetWidth,
             height: page.offsetHeight,
+            windowWidth: page.scrollWidth,
+            windowHeight: page.scrollHeight
         });
 
-        // Restore original style
-        page.style.transform = originalTransform;
-        page.style.backgroundColor = '';
+        // Remove the class after capture
+        page.classList.remove('is-capturing');
         
         const imgData = canvas.toDataURL('image/png');
         const imgWidth = pdfWidth;
@@ -152,7 +150,6 @@ export function TimesheetApp() {
              </Button>
             <span className="text-lg font-bold font-headline">Stundenzettel</span>
           </div>
-          <SheetTitle className="sr-only">Sidebar Navigation</SheetTitle>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>

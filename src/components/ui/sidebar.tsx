@@ -192,7 +192,7 @@ const Sidebar = React.forwardRef<
       )
     }
     
-    if (isMobile && collapsible !== "offcanvas") {
+    if (isMobile) {
       return (
           <Sheet open={openMobile} onOpenChange={setOpenMobile}>
               <SheetContent
@@ -207,6 +207,7 @@ const Sidebar = React.forwardRef<
                 side={side}
                 {...props}
               >
+                <SheetTitle className="sr-only">Sidebar Navigation</SheetTitle>
                 <div className="flex h-full w-full flex-col">{children}</div>
               </SheetContent>
             </Sheet>
