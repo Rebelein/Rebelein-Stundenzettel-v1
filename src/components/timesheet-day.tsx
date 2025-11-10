@@ -85,8 +85,8 @@ export function TimesheetDay({ date, user, entries }: TimesheetDayProps) {
         <div className="w-full">
             <Separator className="my-4 bg-gray-300"/>
             <div className="flex justify-between text-sm text-gray-600">
-                <span>Unterschrift (Arbeitnehmer)</span>
-                <span>Unterschrift (Auftraggeber)</span>
+                <span>Unterschrift</span>
+                <span>Unterschrift</span>
             </div>
         </div>
       </CardFooter>
