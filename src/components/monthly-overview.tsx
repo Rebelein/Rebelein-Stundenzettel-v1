@@ -2,6 +2,7 @@
 
 import type { TimeEntry, User } from '@/lib/types';
 import { TimesheetDay } from './timesheet-day';
+import { useMemo } from 'react';
 
 interface MonthlyOverviewProps {
   entries: TimeEntry[];
@@ -14,22 +15,29 @@ export function MonthlyOverview({
   user,
   currentDate,
 }: MonthlyOverviewProps) {
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const allDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1));
   
-  const daysWithEntries = allDays.filter(day => entries.some(e => e.date === day.toISOString().split('T')[0]));
+  const daysWithEntries = useMemo(() => {
+    const dayMap = new Map<string, TimeEntry[]>();
+    entries.forEach(entry => {
+        const day = entry.date;
+        if (!dayMap.has(day)) {
+            dayMap.set(day, []);
+        }
+        dayMap.get(day)!.push(entry);
+    });
+    return Array.from(dayMap.keys()).sort();
+  }, [entries]);
 
   if (daysWithEntries.length === 0) {
      return <p className="text-center text-muted-foreground mt-10">Keine Daten für den ausgewählten Monat.</p>;
   }
   
   // --- Create data for print layout (hidden by default) ---
-  const printPages = [];
-  for (let i = 0; i < daysWithEntries.length; i += 2) {
-      printPages.push([daysWithEntries[i], daysWithEntries[i+1]].filter(Boolean));
+  const printPages: Date[][] = [];
+  const sortedDays = daysWithEntries.map(d => new Date(d)).sort((a,b) => a.getTime() - b.getTime());
+
+  for (let i = 0; i < sortedDays.length; i += 2) {
+      printPages.push([sortedDays[i], sortedDays[i+1]].filter(Boolean));
   }
 
 
@@ -37,7 +45,7 @@ export function MonthlyOverview({
     <>
       {/* Responsive tile view for screen */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-8 py-4">
-        {daysWithEntries.map(day => (
+        {sortedDays.map(day => (
           <div key={day.toISOString()} className="border rounded-lg shadow-md overflow-hidden">
             <TimesheetDay
               date={day}

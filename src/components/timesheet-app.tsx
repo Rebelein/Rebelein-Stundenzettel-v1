@@ -58,7 +58,12 @@ export function TimesheetApp() {
   }, []);
 
   const selectedUser = users.find((u) => u.id === selectedUserId);
-  const userEntries = allEntries.filter((e) => e.userId === selectedUserId);
+  const userEntries = allEntries.filter((e) => e.userId === selectedUserId).filter(entry => {
+      if (!currentDate) return false;
+      const entryDate = new Date(entry.date);
+      return entryDate.getFullYear() === currentDate.getFullYear() && entryDate.getMonth() === currentDate.getMonth();
+  });
+
 
   const addEntry = (newEntry: {
     date: Date;
@@ -73,6 +78,7 @@ export function TimesheetApp() {
       userId: selectedUserId,
     };
     setAllEntries((prev) => [...prev, entry]);
+    setCurrentDate(newEntry.date);
     setActiveView('overview'); // Switch to overview after adding entry
   };
 
