@@ -19,20 +19,14 @@ export function MonthlyOverview({
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const allDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1));
-  const monthEntries = allDays.map(day => {
-    return entries.filter(
-      (e) => e.date === day.toISOString().split('T')[0]
-    );
-  }).flat();
-  
-  if (monthEntries.length === 0) {
-     return <p className="text-center text-muted-foreground mt-10">Keine Daten für den ausgewählten Monat.</p>;
-  }
   
   const daysWithEntries = allDays.filter(day => entries.some(e => e.date === day.toISOString().split('T')[0]));
 
-
-  // --- Print layout for larger screens ---
+  if (daysWithEntries.length === 0) {
+     return <p className="text-center text-muted-foreground mt-10">Keine Daten für den ausgewählten Monat.</p>;
+  }
+  
+  // --- Create data for print layout (hidden by default) ---
   const printPages = [];
   for (let i = 0; i < daysWithEntries.length; i += 2) {
       printPages.push([daysWithEntries[i], daysWithEntries[i+1]].filter(Boolean));
@@ -41,24 +35,25 @@ export function MonthlyOverview({
 
   return (
     <>
-      {/* Mobile-friendly stacked view */}
-      <div className="md:hidden space-y-4 py-4">
+      {/* Responsive tile view for screen */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-8 py-4">
         {daysWithEntries.map(day => (
-          <TimesheetDay
-            key={day.toISOString()}
-            date={day}
-            user={user}
-            entries={entries.filter(e => e.date === day.toISOString().split('T')[0])}
-          />
+          <div key={day.toISOString()} className="border rounded-lg shadow-md overflow-hidden">
+            <TimesheetDay
+              date={day}
+              user={user}
+              entries={entries.filter(e => e.date === day.toISOString().split('T')[0])}
+            />
+          </div>
         ))}
       </div>
 
-      {/* Print-oriented A4 pages for md screens and up */}
-      <div id="print-area" className="hidden md:block py-4 md:py-8">
+      {/* Print-oriented A4 pages, hidden from view but used for PDF generation */}
+      <div id="print-area" className="hidden">
         {printPages.map((page, pageIndex) => (
           <div
             key={pageIndex}
-            className="a4-page-container mx-auto my-4 md:my-8 bg-gray-300 shadow-2xl relative scale-[0.6] lg:scale-[0.8] xl:scale-100 origin-top"
+            className="a4-page-container mx-auto my-4 md:my-8 bg-white relative"
           >
             {page.map((day, dayIndex) => {
               const dayEntries = entries.filter(
@@ -72,6 +67,7 @@ export function MonthlyOverview({
                   style={{
                     top: '0',
                     left: dayIndex === 0 ? '0' : '148mm',
+                    border: '1px solid #ccc'
                   }}
                 >
                   <TimesheetDay
