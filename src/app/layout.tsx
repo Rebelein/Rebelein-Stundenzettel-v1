@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
-import { SidebarProvider } from '@/components/ui/sidebar';
 import './globals.css';
 import './print.css';
 
@@ -32,9 +31,7 @@ export default function RootLayout({
       <body
         className={cn('min-h-screen bg-background font-body antialiased')}
       >
-        <SidebarProvider>
           {children}
-        </SidebarProvider>
         <Toaster />
       </body>
     </html>

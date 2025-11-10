@@ -9,4 +9,11 @@ export interface TimeEntry {
 export interface User {
   id: string;
   name: string;
+  targetHours: {
+    monday: number;
+    tuesday: number;
+    wednesday: number;
+    thursday: number;
+    friday: number;
+  };
 }

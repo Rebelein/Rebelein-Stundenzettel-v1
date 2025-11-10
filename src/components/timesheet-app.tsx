@@ -21,7 +21,8 @@ import {
   LayoutGrid,
   Plus,
   Loader2,
-  Users
+  Users,
+  BarChart,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -46,9 +47,10 @@ import { startOfMonth, endOfMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { UserManagement } from './user-management';
+import { WorkHoursAnalysis } from './work-hours-analysis';
 
 
-type View = 'new-entry' | 'overview' | 'users';
+type View = 'new-entry' | 'overview' | 'users' | 'analysis';
 
 export function TimesheetApp() {
   const [allEntries, setAllEntries] = useState<TimeEntry[]>([]);
@@ -83,8 +85,12 @@ export function TimesheetApp() {
 
   useEffect(() => {
     // Save data to localStorage whenever it changes
-    localStorage.setItem('timesheet_users', JSON.stringify(users));
-    localStorage.setItem('timesheet_entries', JSON.stringify(allEntries));
+    if (users.length > 0) {
+      localStorage.setItem('timesheet_users', JSON.stringify(users));
+    }
+    if (allEntries.length > 0) {
+      localStorage.setItem('timesheet_entries', JSON.stringify(allEntries));
+    }
   }, [users, allEntries]);
 
   const selectedUser = users.find((u) => u.id === selectedUserId);
@@ -236,8 +242,8 @@ export function TimesheetApp() {
     });
   };
 
-  const addUser = (name: string) => {
-    const newUser: User = { id: `u${Date.now()}`, name };
+  const addUser = (name: string, targetHours: User['targetHours']) => {
+    const newUser: User = { id: `u${Date.now()}`, name, targetHours };
     setUsers(prev => [...prev, newUser]);
   };
 
@@ -263,8 +269,15 @@ export function TimesheetApp() {
   };
 
   const formattedMonth = currentDate?.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) || '';
+  
+  const viewTitles: Record<View, string> = {
+    'new-entry': 'Neuer Eintrag',
+    overview: 'Monatsübersicht',
+    users: 'Benutzerverwaltung',
+    analysis: 'Soll-Ist-Analyse',
+  };
 
-  if (currentDate === undefined) {
+  if (currentDate === undefined || !selectedUser) {
     return <div className="flex items-center justify-center h-screen">Wird geladen...</div>;
   }
   
@@ -301,6 +314,16 @@ export function TimesheetApp() {
                   Monatsübersicht
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => setActiveView('analysis')}
+                  isActive={activeView === 'analysis'}
+                  tooltip="Soll-Ist-Analyse"
+                >
+                  <BarChart />
+                  Analyse
+                </SidebarMenuButton>
+              </SidebarMenuItem>
                <SidebarMenuItem>
                 <SidebarMenuButton 
                   onClick={() => setActiveView('users')}
@@ -321,8 +344,7 @@ export function TimesheetApp() {
                  <div className="flex items-center gap-2">
                   <SidebarTrigger className="md:hidden" />
                   <h1 className="text-2xl md:text-3xl font-headline font-bold">
-                    {activeView === 'new-entry' ? 'Neuer Eintrag' : 
-                     activeView === 'overview' ? 'Monatsübersicht' : 'Benutzerverwaltung'}
+                    {viewTitles[activeView]}
                   </h1>
                 </div>
                 <div className="flex w-full md:w-auto items-center gap-4">
@@ -352,7 +374,7 @@ export function TimesheetApp() {
                 />
               )}
               
-              {activeView === 'overview' && (
+              {(activeView === 'overview' || activeView === 'analysis') && (
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <Button variant="outline" size="icon" onClick={() => changeMonth(-1)}>
@@ -363,38 +385,48 @@ export function TimesheetApp() {
                         <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4 rounded-lg border p-4">
-                     <div className="grid gap-2">
-                      <Label htmlFor="download-start">Download Start</Label>
-                      <DatePicker date={downloadStartDate} setDate={setDownloadStartDate} />
+                   {activeView === 'overview' && (
+                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 rounded-lg border p-4">
+                       <div className="grid gap-2">
+                        <Label htmlFor="download-start">Download Start</Label>
+                        <DatePicker date={downloadStartDate} setDate={setDownloadStartDate} />
+                      </div>
+                       <div className="grid gap-2">
+                        <Label htmlFor="download-end">Download Ende</Label>
+                        <DatePicker date={downloadEndDate} setDate={setDownloadEndDate} />
+                      </div>
+                      <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="self-end">
+                              <Button variant="outline" size="icon" onClick={handleDownloadPdf} disabled={isDownloading}>
+                                {isDownloading ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Download className="h-4 w-4" />
+                                )}
+                                <span className="sr-only">PDF Herunterladen</span>
+                              </Button>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Als PDF herunterladen</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                     </div>
-                     <div className="grid gap-2">
-                      <Label htmlFor="download-end">Download Ende</Label>
-                      <DatePicker date={downloadEndDate} setDate={setDownloadEndDate} />
-                    </div>
-                    <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="self-end">
-                            <Button variant="outline" size="icon" onClick={handleDownloadPdf} disabled={isDownloading}>
-                              {isDownloading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Download className="h-4 w-4" />
-                              )}
-                              <span className="sr-only">PDF Herunterladen</span>
-                            </Button>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Als PDF herunterladen</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                  </div>
+                   )}
                 </div>
               )}
             </div>
+            
+            {activeView === 'analysis' && (
+                <WorkHoursAnalysis 
+                    entries={userEntries}
+                    user={selectedUser}
+                    currentDate={currentDate}
+                />
+            )}
 
             {activeView === 'overview' && (
               <div className="mt-8 print:mt-0">

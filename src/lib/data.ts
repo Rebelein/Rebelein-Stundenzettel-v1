@@ -1,9 +1,17 @@
 import type { User, TimeEntry } from './types';
 
+const defaultTargetHours = {
+  monday: 8,
+  tuesday: 8,
+  wednesday: 8,
+  thursday: 8,
+  friday: 8,
+};
+
 export const users: User[] = [
-  { id: '1', name: 'Max Mustermann' },
-  { id: '2', name: 'Erika Mustermann' },
-  { id: '3', name: 'Sabine Schmidt' },
+  { id: '1', name: 'Max Mustermann', targetHours: defaultTargetHours },
+  { id: '2', name: 'Erika Mustermann', targetHours: { ...defaultTargetHours, wednesday: 4 } },
+  { id: '3', name: 'Sabine Schmidt', targetHours: defaultTargetHours },
 ];
 
 const getISODate = (dayOffset = 0) => {
