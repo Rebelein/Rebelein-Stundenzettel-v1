@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
+import { AuthProvider } from '@/components/auth-provider';
 import './globals.css';
 import './print.css';
 
 export const metadata: Metadata = {
   title: 'Stundenzettel Meister',
   description: 'Einfache Stundenerfassung für deine Projekte.',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -31,8 +33,11 @@ export default function RootLayout({
       <body
         className={cn('min-h-screen bg-background font-body antialiased')}
       >
+        <AuthProvider>
+          <div className="absolute top-0 z-[-2] h-screen w-screen bg-background bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
           {children}
-        <Toaster />
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );
