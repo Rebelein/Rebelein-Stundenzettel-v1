@@ -87,7 +87,6 @@ export function TimesheetApp() {
     };
     setAllEntries((prev) => [...prev, entry]);
     setCurrentDate(newEntry.date);
-    setActiveView('overview'); // Switch to overview after adding entry
   };
   
   const updateEntry = (updatedEntry: TimeEntry) => {
