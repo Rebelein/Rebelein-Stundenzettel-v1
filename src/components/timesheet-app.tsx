@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { User, TimeEntry } from '@/lib/types';
 import { users, initialEntries } from '@/lib/data';
 import { TimeEntryForm } from './time-entry-form';
@@ -23,7 +23,11 @@ import {
 export function TimesheetApp() {
   const [allEntries, setAllEntries] = useState<TimeEntry[]>(initialEntries);
   const [selectedUserId, setSelectedUserId] = useState<string>(users[0]?.id || '');
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
+
+  useEffect(() => {
+    setCurrentDate(new Date());
+  }, []);
 
   const selectedUser = users.find((u) => u.id === selectedUserId);
   const userEntries = allEntries.filter((e) => e.userId === selectedUserId);
@@ -49,13 +53,18 @@ export function TimesheetApp() {
   
   const changeMonth = (amount: number) => {
     setCurrentDate(prevDate => {
+      if (!prevDate) return new Date();
       const newDate = new Date(prevDate);
       newDate.setMonth(newDate.getMonth() + amount);
       return newDate;
     });
   };
 
-  const formattedMonth = currentDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+  const formattedMonth = currentDate?.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) || '';
+
+  if (!currentDate) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
 
   return (
     <div className="container mx-auto p-4 md:p-8">
