@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -91,6 +92,9 @@ export function TimesheetApp() {
     
     setIsDownloading(true);
 
+    // Short delay to ensure DOM is fully rendered before capture
+    await new Promise(resolve => setTimeout(resolve, 50));
+
     const pdf = new jsPDF('landscape', 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -112,7 +116,7 @@ export function TimesheetApp() {
         // Remove class after capturing
         page.classList.remove('is-capturing');
         
-        const imgData = canvas.toDataURL('image/png');
+        const imgData = canvas.toDataURL('image/jpeg', 0.95); // Use JPEG format
         const imgWidth = pdfWidth;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
@@ -120,7 +124,7 @@ export function TimesheetApp() {
             pdf.addPage();
         }
         
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight > pdfHeight ? pdfHeight : imgHeight);
+        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight > pdfHeight ? pdfHeight : imgHeight);
     }
     
     const month = currentDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
