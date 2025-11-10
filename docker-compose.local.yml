@@ -21,7 +21,7 @@ services:
     volumes:
       - ./supabase/volumes/db:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5434:5432"
 
   supabase-studio:
     image: supabase/studio:latest
