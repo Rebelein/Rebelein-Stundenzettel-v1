@@ -32,7 +32,6 @@ import {
   SidebarTrigger,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import { SheetTitle } from '@/components/ui/sheet';
 import {
   Tooltip,
   TooltipContent,
@@ -41,6 +40,7 @@ import {
 } from '@/components/ui/tooltip';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { SheetTitle } from '@/components/ui/sheet';
 
 
 type View = 'new-entry' | 'overview';
@@ -154,7 +154,6 @@ export function TimesheetApp() {
     <>
       <Sidebar collapsible="icon">
         <SidebarHeader>
-          <SheetTitle className="sr-only">Sidebar Navigation</SheetTitle>
           <div className="flex items-center gap-2">
              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                <FileClock className="size-5 text-primary" />
