@@ -31,6 +31,7 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
   SidebarInset,
+  SidebarProvider,
 } from '@/components/ui/sidebar';
 import {
   Tooltip,
@@ -139,7 +140,7 @@ export function TimesheetApp() {
   }
   
   return (
-    <>
+    <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2">
@@ -245,6 +246,6 @@ export function TimesheetApp() {
             )}
         </div>
       </SidebarInset>
-    </>
+    </SidebarProvider>
   )
 }
