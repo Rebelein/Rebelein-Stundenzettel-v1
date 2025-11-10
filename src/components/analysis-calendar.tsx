@@ -38,10 +38,12 @@ export function AnalysisCalendar({ entries, user, currentDate }: AnalysisCalenda
   const emptyCellsBefore = (firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1);
 
   const getTargetHoursForDay = (date: Date): number => {
+    if (!user.targetHours) return 0;
+
     const dayOfWeek = getDay(date); // 0=Sun, 1=Mon...
     const weekdayMap: (keyof User['targetHours'])[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
     if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-        return user.targetHours[weekdayMap[dayOfWeek-1]];
+        return user.targetHours[weekdayMap[dayOfWeek-1]] || 0;
     }
     return 0; // No target hours for Saturday and Sunday
   }
@@ -66,12 +68,12 @@ export function AnalysisCalendar({ entries, user, currentDate }: AnalysisCalenda
 
           let dayBgClass = 'bg-white';
           if (actualHours > 0) {
-              if (actualHours >= targetHours) {
+              if (targetHours > 0 && actualHours >= targetHours) {
                   dayBgClass = 'bg-green-100';
-              } else {
+              } else if (targetHours > 0) {
                   dayBgClass = 'bg-red-100';
               }
-          } else if (targetHours > 0 && day < new Date()) {
+          } else if (targetHours > 0 && day < new Date() && !isToday) {
              dayBgClass = 'bg-red-100';
           }
 
@@ -85,7 +87,7 @@ export function AnalysisCalendar({ entries, user, currentDate }: AnalysisCalenda
               )}
             >
               <span className="font-bold text-gray-800">{format(day, 'd')}</span>
-              {actualHours > 0 && (
+              {(actualHours > 0 || targetHours > 0) && (
                 <div className="mt-auto text-center">
                     <span className={cn("font-bold text-lg", actualHours >= targetHours ? "text-green-700" : "text-red-700" )}>
                         {actualHours.toFixed(1)}

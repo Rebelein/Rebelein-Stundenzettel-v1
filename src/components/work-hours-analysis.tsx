@@ -29,8 +29,8 @@ export function WorkHoursAnalysis({ entries, user, currentDate }: WorkHoursAnaly
         const date = new Date(monthStart.getFullYear(), monthStart.getMonth(), i);
         const dayOfWeek = getDay(date); // 0=Sun, 1=Mon...
         
-        if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
-          totalTargetHours += user.targetHours[weekdayMap[dayOfWeek-1]];
+        if (dayOfWeek >= 1 && dayOfWeek <= 5 && user.targetHours) { // Monday to Friday
+          totalTargetHours += user.targetHours[weekdayMap[dayOfWeek-1]] || 0;
         }
       }
     }
