@@ -24,7 +24,7 @@ services:
       - "5432:5432"
 
   supabase-studio:
-    image: supabase/studio:20240325
+    image: supabase/studio:latest
     restart: unless-stopped
     environment:
       - SUPABASE_URL=http://localhost:8000
