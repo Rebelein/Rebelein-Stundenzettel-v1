@@ -19,14 +19,22 @@ import {
   TableFooter
 } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { Pencil, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { EditTimeEntryDialog } from './edit-time-entry-dialog';
 
 interface TimesheetDayProps {
   date: Date;
   user: User | undefined;
   entries: TimeEntry[];
+  updateEntry: (entry: TimeEntry) => void;
+  deleteEntry: (entryId: string) => void;
 }
 
-export function TimesheetDay({ date, user, entries }: TimesheetDayProps) {
+export function TimesheetDay({ date, user, entries, updateEntry, deleteEntry }: TimesheetDayProps) {
+  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
+
   const totalHours = entries.reduce((sum, entry) => sum + entry.hours, 0);
 
   const formattedDate = date.toLocaleDateString('de-DE', {
@@ -37,6 +45,7 @@ export function TimesheetDay({ date, user, entries }: TimesheetDayProps) {
   });
 
   return (
+    <>
     <div className="bg-white text-black w-full h-full p-6 flex flex-col">
       <CardHeader className="p-0">
         <div className="flex justify-between items-start">
@@ -54,6 +63,7 @@ export function TimesheetDay({ date, user, entries }: TimesheetDayProps) {
             <TableRow>
               <TableHead className="w-3/4">Kunde / Tätigkeit</TableHead>
               <TableHead className="text-right">Stunden</TableHead>
+              <TableHead className="text-right">Aktion</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -62,11 +72,19 @@ export function TimesheetDay({ date, user, entries }: TimesheetDayProps) {
                 <TableRow key={entry.id}>
                   <TableCell>{entry.customer}</TableCell>
                   <TableCell className="text-right">{entry.hours.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={() => setEditingEntry(entry)}>
+                        <Pencil className="h-4 w-4 text-blue-500" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => deleteEntry(entry.id)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={2} className="text-center text-gray-500 py-10">
+                <TableCell colSpan={3} className="text-center text-gray-500 py-10">
                   Keine Einträge für diesen Tag.
                 </TableCell>
               </TableRow>
@@ -75,7 +93,7 @@ export function TimesheetDay({ date, user, entries }: TimesheetDayProps) {
           <TableFooter>
              <TableRow>
                 <TableCell className="font-bold">Gesamt</TableCell>
-                <TableCell className="text-right font-bold">{totalHours.toFixed(2)}</TableCell>
+                <TableCell className="text-right font-bold" colSpan={2}>{totalHours.toFixed(2)}</TableCell>
             </TableRow>
           </TableFooter>
         </Table>
@@ -91,5 +109,13 @@ export function TimesheetDay({ date, user, entries }: TimesheetDayProps) {
         </div>
       </CardFooter>
     </div>
+    {editingEntry && (
+        <EditTimeEntryDialog 
+            entry={editingEntry}
+            onClose={() => setEditingEntry(null)}
+            onSave={updateEntry}
+        />
+    )}
+    </>
   );
 }

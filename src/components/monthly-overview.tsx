@@ -8,12 +8,16 @@ interface MonthlyOverviewProps {
   entries: TimeEntry[];
   user: User | undefined;
   currentDate: Date;
+  updateEntry: (entry: TimeEntry) => void;
+  deleteEntry: (entryId: string) => void;
 }
 
 export function MonthlyOverview({
   entries,
   user,
   currentDate,
+  updateEntry,
+  deleteEntry,
 }: MonthlyOverviewProps) {
   
   const daysWithEntries = useMemo(() => {
@@ -45,6 +49,8 @@ export function MonthlyOverview({
               date={day}
               user={user}
               entries={entries.filter(e => e.date === day.toISOString().split('T')[0])}
+              updateEntry={updateEntry}
+              deleteEntry={deleteEntry}
             />
           </div>
         ))}

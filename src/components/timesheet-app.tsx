@@ -89,6 +89,14 @@ export function TimesheetApp() {
     setCurrentDate(newEntry.date);
     setActiveView('overview'); // Switch to overview after adding entry
   };
+  
+  const updateEntry = (updatedEntry: TimeEntry) => {
+    setAllEntries(prev => prev.map(e => e.id === updatedEntry.id ? updatedEntry : e));
+  };
+  
+  const deleteEntry = (entryId: string) => {
+     setAllEntries(prev => prev.filter(e => e.id !== entryId));
+  }
 
   const handleDownloadPdf = async () => {
     if (!selectedUser || !currentDate || !downloadStartDate || !downloadEndDate) return;
@@ -331,6 +339,8 @@ export function TimesheetApp() {
                   entries={userEntries}
                   user={selectedUser}
                   currentDate={currentDate}
+                  updateEntry={updateEntry}
+                  deleteEntry={deleteEntry}
                 />
               </div>
             )}
