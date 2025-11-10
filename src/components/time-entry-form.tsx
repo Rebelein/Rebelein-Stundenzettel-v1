@@ -60,7 +60,7 @@ export function TimeEntryForm({ addEntry }: TimeEntryFormProps) {
   }
 
   return (
-    <Card className="bg-card/60 backdrop-blur-lg border border-white/20">
+    <Card>
       <CardHeader>
         <CardTitle className="font-headline text-lg">Neuer Eintrag</CardTitle>
       </CardHeader>

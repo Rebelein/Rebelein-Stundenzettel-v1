@@ -57,7 +57,7 @@ export function TimesheetDay({ date, user, entries, updateEntry, deleteEntry }: 
 
   return (
     <>
-    <div className="bg-white text-black w-full h-full p-6 flex flex-col">
+    <Card className="bg-transparent border-none shadow-none flex flex-col h-full">
       <CardHeader className="p-0">
         <div className="flex justify-between items-start">
             <div>
@@ -135,7 +135,7 @@ export function TimesheetDay({ date, user, entries, updateEntry, deleteEntry }: 
             </div>
         </div>
       </CardFooter>
-    </div>
+    </Card>
     {editingEntry && (
         <EditTimeEntryDialog 
             entry={editingEntry}

@@ -3,6 +3,7 @@
 import type { TimeEntry, User } from '@/lib/types';
 import { TimesheetDay } from './timesheet-day';
 import { useMemo } from 'react';
+import { Card } from '@/components/ui/card';
 
 interface MonthlyOverviewProps {
   entries: TimeEntry[];
@@ -44,7 +45,7 @@ export function MonthlyOverview({
       {/* Responsive tile view for screen */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-8 py-4">
         {sortedDays.map(day => (
-          <div key={day.toISOString()} className="border rounded-lg shadow-md overflow-hidden">
+          <Card key={day.toISOString()}>
             <TimesheetDay
               date={day}
               user={user}
@@ -52,7 +53,7 @@ export function MonthlyOverview({
               updateEntry={updateEntry}
               deleteEntry={deleteEntry}
             />
-          </div>
+          </Card>
         ))}
       </div>
     </>
