@@ -31,6 +31,13 @@ import {
   SidebarTrigger,
   SidebarInset,
 } from '@/components/ui/sidebar';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+
 
 type View = 'new-entry' | 'overview';
 
@@ -143,10 +150,20 @@ export function TimesheetApp() {
                   </SelectContent>
                 </Select>
                 {activeView === 'overview' && (
-                  <Button variant="outline" size="icon" onClick={handlePrint}>
-                    <Download className="h-4 w-4" />
-                    <span className="sr-only">PDF Herunterladen</span>
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        {/* The onClick is temporarily removed and disabled is added */}
+                        <Button variant="outline" size="icon" disabled>
+                          <Download className="h-4 w-4" />
+                          <span className="sr-only">PDF Herunterladen</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Hier wird noch kein Download erzeugt</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </div>
             </header>
