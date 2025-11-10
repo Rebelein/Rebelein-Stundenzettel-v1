@@ -37,7 +37,7 @@ export function TimesheetDay({ date, user, entries }: TimesheetDayProps) {
   });
 
   return (
-    <div className="a5-sheet bg-white text-black p-6 flex flex-col shadow-lg transition-transform duration-300 hover:scale-[1.02] w-full h-full">
+    <div className="a5-container bg-white text-black p-6 flex flex-col shadow-lg transition-transform duration-300 hover:scale-[1.02] w-full h-full">
       <CardHeader className="p-0">
         <div className="flex justify-between items-start">
             <div>
