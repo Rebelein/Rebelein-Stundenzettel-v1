@@ -31,6 +31,7 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
   SidebarInset,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   Tooltip,
@@ -38,14 +39,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { SheetTitle } from '@/components/ui/sheet';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { SheetTitle } from '@/components/ui/sheet';
 
 
 type View = 'new-entry' | 'overview';
 
-export function TimesheetApp() {
+function AppContent() {
+  const { isMobile } = useSidebar();
   const [allEntries, setAllEntries] = useState<TimeEntry[]>(initialEntries);
   const [selectedUserId, setSelectedUserId] = useState<string>(users[0]?.id || '');
   const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
@@ -78,8 +80,8 @@ export function TimesheetApp() {
 
   const handleDownloadPdf = async () => {
     const printArea = document.getElementById('print-area');
-    if (!printArea) {
-      console.error("Print area not found");
+    if (!printArea || !currentDate) {
+      console.error("Print area not found or date not set");
       return;
     }
     
@@ -94,31 +96,21 @@ export function TimesheetApp() {
     for (let i = 0; i < pages.length; i++) {
         const page = pages[i];
         
-        // Temporarily modify styles for capturing
-        const originalTransform = page.style.transform;
-        const originalBg = page.style.backgroundColor;
         page.style.transform = 'scale(1)';
         page.style.backgroundColor = 'white';
 
-
         const canvas = await html2canvas(page, {
-            scale: 2, // Higher scale for better quality
+            scale: 2,
             useCORS: true,
             logging: false,
             width: page.offsetWidth,
             height: page.offsetHeight,
-            windowWidth: document.documentElement.scrollWidth,
-            windowHeight: document.documentElement.scrollHeight,
-            scrollX: 0,
-            scrollY: 0,
         });
 
-        // Restore original styles
-        page.style.transform = originalTransform;
-        page.style.backgroundColor = originalBg;
+        page.style.transform = '';
+        page.style.backgroundColor = '';
         
         const imgData = canvas.toDataURL('image/png');
-
         const imgWidth = pdfWidth;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
@@ -129,7 +121,7 @@ export function TimesheetApp() {
         pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight > pdfHeight ? pdfHeight : imgHeight);
     }
     
-    const month = currentDate?.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) || 'Stundenzettel';
+    const month = currentDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
     pdf.save(`Stundenzettel-${selectedUser?.name?.replace(' ','_')}-${month}.pdf`);
 
     setIsDownloading(false);
@@ -149,10 +141,10 @@ export function TimesheetApp() {
   if (currentDate === undefined) {
     return <div className="flex items-center justify-center h-screen">Wird geladen...</div>;
   }
-
+  
   return (
     <>
-      <Sidebar collapsible="icon">
+     <Sidebar collapsible={isMobile ? "offcanvas" : "icon"}>
         <SidebarHeader>
           <div className="flex items-center gap-2">
              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
@@ -188,75 +180,80 @@ export function TimesheetApp() {
       </Sidebar>
       <SidebarInset>
         <div className="container mx-auto p-4 md:p-8">
-          <div className="no-print flex flex-col gap-8">
-            <header className="flex flex-col md:flex-row items-center justify-between gap-4">
-               <div className="flex items-center gap-2">
-                <SidebarTrigger className="md:hidden" />
-                <h1 className="text-2xl md:text-3xl font-headline font-bold">
-                  {activeView === 'new-entry' ? 'Neuer Eintrag' : 'Monatsübersicht'}
-                </h1>
-              </div>
-              <div className="flex w-full md:w-auto items-center gap-4">
-                 <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                  <SelectTrigger className="w-full md:w-[200px]">
-                    <SelectValue placeholder="Benutzer auswählen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {activeView === 'overview' && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon" onClick={handleDownloadPdf} disabled={isDownloading}>
-                          {isDownloading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Download className="h-4 w-4" />
-                          )}
-                          <span className="sr-only">PDF Herunterladen</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Als PDF herunterladen</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </div>
-            </header>
+            <div className="no-print flex flex-col gap-8">
+              <header className="flex flex-col md:flex-row items-center justify-between gap-4">
+                 <div className="flex items-center gap-2">
+                  <SidebarTrigger className="md:hidden" />
+                  <h1 className="text-2xl md:text-3xl font-headline font-bold">
+                    {activeView === 'new-entry' ? 'Neuer Eintrag' : 'Monatsübersicht'}
+                  </h1>
+                </div>
+                <div className="flex w-full md:w-auto items-center gap-4">
+                   <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                    <SelectTrigger className="w-full md:w-[200px]">
+                      <SelectValue placeholder="Benutzer auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {activeView === 'overview' && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="icon" onClick={handleDownloadPdf} disabled={isDownloading}>
+                            {isDownloading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Download className="h-4 w-4" />
+                            )}
+                            <span className="sr-only">PDF Herunterladen</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Als PDF herunterladen</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
+              </header>
 
-            {activeView === 'new-entry' && <TimeEntryForm addEntry={addEntry} />}
-            
+              {activeView === 'new-entry' && <TimeEntryForm addEntry={addEntry} />}
+              
+              {activeView === 'overview' && (
+                <div className="flex items-center justify-center gap-4">
+                  <Button variant="outline" size="icon" onClick={() => changeMonth(-1)}>
+                      <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-lg font-medium font-headline w-40 text-center">{formattedMonth}</span>
+                  <Button variant="outline" size="icon" onClick={() => changeMonth(1)}>
+                      <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
             {activeView === 'overview' && (
-              <div className="flex items-center justify-center gap-4">
-                <Button variant="outline" size="icon" onClick={() => changeMonth(-1)}>
-                    <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-lg font-medium font-headline w-40 text-center">{formattedMonth}</span>
-                <Button variant="outline" size="icon" onClick={() => changeMonth(1)}>
-                    <ChevronRight className="h-4 w-4" />
-                </Button>
+              <div className="mt-8 print:mt-0">
+                 <MonthlyOverview
+                  entries={userEntries}
+                  user={selectedUser}
+                  currentDate={currentDate}
+                />
               </div>
             )}
-          </div>
-
-          {activeView === 'overview' && (
-            <div className="mt-8 print:mt-0">
-               <MonthlyOverview
-                entries={userEntries}
-                user={selectedUser}
-                currentDate={currentDate}
-              />
-            </div>
-          )}
         </div>
       </SidebarInset>
     </>
-  );
+  )
+}
+
+
+export function TimesheetApp() {
+  return <AppContent />
 }
