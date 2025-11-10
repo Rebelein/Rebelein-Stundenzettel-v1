@@ -26,6 +26,7 @@ export function TimesheetApp() {
   const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
+    // Set initial date only on the client to avoid hydration mismatch
     setCurrentDate(new Date());
   }, []);
 
@@ -62,8 +63,8 @@ export function TimesheetApp() {
 
   const formattedMonth = currentDate?.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) || '';
 
-  if (!currentDate) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  if (currentDate === undefined) {
+    return <div className="flex items-center justify-center h-screen">Wird geladen...</div>;
   }
 
   return (
