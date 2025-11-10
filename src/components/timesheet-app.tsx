@@ -39,7 +39,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { SheetTitle } from '@/components/ui/sheet';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Label } from '@/components/ui/label';
+import { startOfMonth, endOfMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -50,12 +52,17 @@ export function TimesheetApp() {
   const [allEntries, setAllEntries] = useState<TimeEntry[]>(initialEntries);
   const [selectedUserId, setSelectedUserId] = useState<string>(users[0]?.id || '');
   const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
+  const [downloadStartDate, setDownloadStartDate] = useState<Date | undefined>(undefined);
+  const [downloadEndDate, setDownloadEndDate] = useState<Date | undefined>(undefined);
   const [activeView, setActiveView] = useState<View>('new-entry');
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     // Set initial date only on the client to avoid hydration mismatch
-    setCurrentDate(new Date());
+    const now = new Date();
+    setCurrentDate(now);
+    setDownloadStartDate(startOfMonth(now));
+    setDownloadEndDate(endOfMonth(now));
   }, []);
 
   const selectedUser = users.find((u) => u.id === selectedUserId);
@@ -84,13 +91,27 @@ export function TimesheetApp() {
   };
 
   const handleDownloadPdf = async () => {
-    if (!selectedUser || !currentDate || userEntries.length === 0) return;
+    if (!selectedUser || !currentDate || !downloadStartDate || !downloadEndDate) return;
+
+    const entriesToDownload = allEntries.filter(entry => {
+        if (entry.userId !== selectedUserId) return false;
+        const entryDate = new Date(entry.date);
+        // Add a day to end date to make it inclusive
+        const inclusiveEndDate = new Date(downloadEndDate);
+        inclusiveEndDate.setDate(inclusiveEndDate.getDate() + 1);
+        return entryDate >= downloadStartDate && entryDate < inclusiveEndDate;
+    });
+
+    if (entriesToDownload.length === 0) {
+        alert("Keine Einträge im ausgewählten Zeitraum gefunden.");
+        return;
+    }
+    
     setIsDownloading(true);
 
     const doc = new jsPDF('landscape', 'mm', 'a4');
     
-    // Group entries by date
-    const entriesByDate = userEntries.reduce((acc, entry) => {
+    const entriesByDate = entriesToDownload.reduce((acc, entry) => {
         (acc[entry.date] = acc[entry.date] || []).push(entry);
         return acc;
     }, {} as Record<string, TimeEntry[]>);
@@ -110,11 +131,7 @@ export function TimesheetApp() {
         const a5Width = 148;
         const a5Height = 210;
         const margin = 15;
-        const contentWidth = a5Width - (margin * 2);
 
-        // A5 Box
-        doc.rect(xOffset, 0, a5Width, a5Height); 
-        
         // Header
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
@@ -132,9 +149,11 @@ export function TimesheetApp() {
             body: entries.map(e => [e.customer, e.hours.toFixed(2)]),
             foot: [['Gesamt', totalHours.toFixed(2)]],
             margin: { left: xOffset + margin, right: 297 - (xOffset + a5Width - margin)},
+            theme: 'grid',
             styles: {
                 font: 'helvetica',
                 fontSize: 10,
+                cellPadding: 2,
             },
             headStyles: {
                 fontStyle: 'bold',
@@ -149,15 +168,12 @@ export function TimesheetApp() {
             columnStyles: {
                 1: { halign: 'right' },
             },
-            didDrawPage: (data: any) => {
-                // We handle drawing manually, so nothing needed here
-            }
         });
         
         const finalY = (doc as any).lastAutoTable.finalY;
 
         // Footer Signatures
-        const signatureY = a5Height - margin - 5;
+        const signatureY = a5Height - margin - 15;
         doc.line(xOffset + margin, signatureY, xOffset + margin + 50, signatureY);
         doc.text('Unterschrift', xOffset + margin, signatureY + 5);
 
@@ -189,6 +205,8 @@ export function TimesheetApp() {
       if (!prevDate) return new Date();
       const newDate = new Date(prevDate);
       newDate.setMonth(newDate.getMonth() + amount);
+      setDownloadStartDate(startOfMonth(newDate));
+      setDownloadEndDate(endOfMonth(newDate));
       return newDate;
     });
   };
@@ -258,39 +276,51 @@ export function TimesheetApp() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {activeView === 'overview' && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" size="icon" onClick={handleDownloadPdf} disabled={isDownloading || userEntries.length === 0}>
-                            {isDownloading ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Download className="h-4 w-4" />
-                            )}
-                            <span className="sr-only">PDF Herunterladen</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Als PDF herunterladen</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
                 </div>
               </header>
 
               {activeView === 'new-entry' && <TimeEntryForm addEntry={addEntry} />}
               
               {activeView === 'overview' && (
-                <div className="flex items-center justify-center gap-4">
-                  <Button variant="outline" size="icon" onClick={() => changeMonth(-1)}>
-                      <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-lg font-medium font-headline w-40 text-center">{formattedMonth}</span>
-                  <Button variant="outline" size="icon" onClick={() => changeMonth(1)}>
-                      <ChevronRight className="h-4 w-4" />
-                  </Button>
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <Button variant="outline" size="icon" onClick={() => changeMonth(-1)}>
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-lg font-medium font-headline w-40 text-center">{formattedMonth}</span>
+                    <Button variant="outline" size="icon" onClick={() => changeMonth(1)}>
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4 rounded-lg border p-4">
+                     <div className="grid gap-2">
+                      <Label htmlFor="download-start">Download Start</Label>
+                      <DatePicker date={downloadStartDate} setDate={setDownloadStartDate} />
+                    </div>
+                     <div className="grid gap-2">
+                      <Label htmlFor="download-end">Download Ende</Label>
+                      <DatePicker date={downloadEndDate} setDate={setDownloadEndDate} />
+                    </div>
+                    <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="self-end">
+                            <Button variant="outline" size="icon" onClick={handleDownloadPdf} disabled={isDownloading}>
+                              {isDownloading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Download className="h-4 w-4" />
+                              )}
+                              <span className="sr-only">PDF Herunterladen</span>
+                            </Button>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Als PDF herunterladen</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                  </div>
                 </div>
               )}
             </div>
