@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -42,7 +41,8 @@ import {
 } from '@/components/ui/tooltip';
 import { SheetTitle } from '@/components/ui/sheet';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import 'jspdf-autotable';
+
 
 type View = 'new-entry' | 'overview';
 
@@ -84,51 +84,102 @@ export function TimesheetApp() {
   };
 
   const handleDownloadPdf = async () => {
-    const printArea = document.getElementById('print-area');
-    if (!printArea || !currentDate) {
-      console.error("Print area not found or date not set");
-      return;
-    }
-    
+    if (!selectedUser || !currentDate || userEntries.length === 0) return;
     setIsDownloading(true);
 
-    // Short delay to ensure DOM is fully rendered before capture
-    await new Promise(resolve => setTimeout(resolve, 50));
-
-    const pdf = new jsPDF('landscape', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const doc = new jsPDF('landscape', 'mm', 'a4');
     
-    const pages = printArea.querySelectorAll<HTMLElement>('.a4-page-container');
-    
-    for (let i = 0; i < pages.length; i++) {
-        const page = pages[i];
-        
-        // Add class to prepare for capturing
-        page.classList.add('is-capturing');
+    // Group entries by date
+    const entriesByDate = userEntries.reduce((acc, entry) => {
+        (acc[entry.date] = acc[entry.date] || []).push(entry);
+        return acc;
+    }, {} as Record<string, TimeEntry[]>);
 
-        const canvas = await html2canvas(page, {
-            scale: 2, 
-            useCORS: true,
-            logging: false,
+    const sortedDays = Object.keys(entriesByDate).sort();
+
+    const drawTimesheet = (dayDate: string, xOffset: number) => {
+        const entries = entriesByDate[dayDate];
+        const totalHours = entries.reduce((sum, entry) => sum + entry.hours, 0);
+        const formattedDate = new Date(dayDate).toLocaleDateString('de-DE', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
         });
-
-        // Remove class after capturing
-        page.classList.remove('is-capturing');
         
-        const imgData = canvas.toDataURL('image/jpeg', 0.95); // Use JPEG format
-        const imgWidth = pdfWidth;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const a5Width = 148;
+        const a5Height = 210;
+        const margin = 15;
+        const contentWidth = a5Width - (margin * 2);
 
-        if (i > 0) {
-            pdf.addPage();
-        }
+        // A5 Box
+        doc.rect(xOffset, 0, a5Width, a5Height); 
         
-        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight > pdfHeight ? pdfHeight : imgHeight);
+        // Header
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Stundenzettel', xOffset + margin, margin);
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(selectedUser.name, xOffset + margin, margin + 7);
+        doc.text(formattedDate, xOffset + a5Width - margin, margin + 7, { align: 'right' });
+        
+        // Table
+        (doc as any).autoTable({
+            startY: margin + 15,
+            head: [['Kunde / Tätigkeit', 'Stunden']],
+            body: entries.map(e => [e.customer, e.hours.toFixed(2)]),
+            foot: [['Gesamt', totalHours.toFixed(2)]],
+            margin: { left: xOffset + margin, right: 297 - (xOffset + a5Width - margin)},
+            styles: {
+                font: 'helvetica',
+                fontSize: 10,
+            },
+            headStyles: {
+                fontStyle: 'bold',
+                fillColor: [230, 230, 230],
+                textColor: 20
+            },
+            footStyles: {
+                fontStyle: 'bold',
+                fillColor: [230, 230, 230],
+                textColor: 20
+            },
+            columnStyles: {
+                1: { halign: 'right' },
+            },
+            didDrawPage: (data: any) => {
+                // We handle drawing manually, so nothing needed here
+            }
+        });
+        
+        const finalY = (doc as any).lastAutoTable.finalY;
+
+        // Footer Signatures
+        const signatureY = a5Height - margin - 5;
+        doc.line(xOffset + margin, signatureY, xOffset + margin + 50, signatureY);
+        doc.text('Unterschrift', xOffset + margin, signatureY + 5);
+
+        doc.line(xOffset + a5Width - margin - 50, signatureY, xOffset + a5Width - margin, signatureY);
+        doc.text('Unterschrift', xOffset + a5Width - margin - 50, signatureY + 5);
+    };
+
+    for (let i = 0; i < sortedDays.length; i += 2) {
+      if (i > 0) {
+        doc.addPage();
+      }
+      // Draw left A5 page
+      drawTimesheet(sortedDays[i], 0);
+
+      // Draw right A5 page if it exists
+      if (sortedDays[i + 1]) {
+        drawTimesheet(sortedDays[i + 1], 148.5);
+      }
     }
     
     const month = currentDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
-    pdf.save(`Stundenzettel-${selectedUser?.name?.replace(' ','_')}-${month}.pdf`);
+    doc.save(`Stundenzettel-${selectedUser?.name?.replace(' ','_')}-${month}.pdf`);
 
     setIsDownloading(false);
   };
@@ -211,7 +262,7 @@ export function TimesheetApp() {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="outline" size="icon" onClick={handleDownloadPdf} disabled={isDownloading}>
+                          <Button variant="outline" size="icon" onClick={handleDownloadPdf} disabled={isDownloading || userEntries.length === 0}>
                             {isDownloading ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
