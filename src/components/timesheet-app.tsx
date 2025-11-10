@@ -39,6 +39,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { SheetTitle } from '@/components/ui/sheet';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -93,18 +94,16 @@ export function TimesheetApp() {
     for (let i = 0; i < pages.length; i++) {
         const page = pages[i];
         
+        // Add class to prepare for capturing
         page.classList.add('is-capturing');
 
         const canvas = await html2canvas(page, {
             scale: 2, 
             useCORS: true,
             logging: false,
-            width: page.offsetWidth,
-            height: page.offsetHeight,
-            windowWidth: page.scrollWidth,
-            windowHeight: page.scrollHeight
         });
 
+        // Remove class after capturing
         page.classList.remove('is-capturing');
         
         const imgData = canvas.toDataURL('image/png');
@@ -142,41 +141,41 @@ export function TimesheetApp() {
   return (
     <SidebarProvider>
       <Sidebar>
-        <SidebarHeader>
-          <div className="flex items-center gap-2">
-             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-               <FileClock className="size-5 text-primary" />
-             </Button>
-            <span className="text-lg font-bold font-headline">Stundenzettel</span>
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton 
-                onClick={() => setActiveView('new-entry')}
-                isActive={activeView === 'new-entry'}
-                tooltip="Neuer Eintrag"
-              >
-                <Plus />
-                Neuer Eintrag
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton 
-                onClick={() => setActiveView('overview')}
-                isActive={activeView === 'overview'}
-                tooltip="Monatsübersicht"
-              >
-                <LayoutGrid />
-                Monatsübersicht
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarContent>
-      </Sidebar>
-      <SidebarInset>
-        <div className="container mx-auto p-4 md:p-8">
+          <SidebarHeader>
+            <div className="flex items-center gap-2">
+               <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                 <FileClock className="size-5 text-primary" />
+               </Button>
+              <span className="text-lg font-bold font-headline">Stundenzettel</span>
+            </div>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => setActiveView('new-entry')}
+                  isActive={activeView === 'new-entry'}
+                  tooltip="Neuer Eintrag"
+                >
+                  <Plus />
+                  Neuer Eintrag
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => setActiveView('overview')}
+                  isActive={activeView === 'overview'}
+                  tooltip="Monatsübersicht"
+                >
+                  <LayoutGrid />
+                  Monatsübersicht
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarContent>
+        </Sidebar>
+        <SidebarInset>
+           <div className="container mx-auto p-4 md:p-8">
             <div className="no-print flex flex-col gap-8">
               <header className="flex flex-col md:flex-row items-center justify-between gap-4">
                  <div className="flex items-center gap-2">
