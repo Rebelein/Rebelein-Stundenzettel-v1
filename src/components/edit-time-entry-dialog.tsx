@@ -37,12 +37,14 @@ const formSchema = z.object({
 });
 
 interface EditTimeEntryDialogProps {
+  isOpen: boolean;
   entry: TimeEntry;
   onClose: () => void;
-  onSave: (entry: TimeEntry) => void;
+  onUpdate: (entry: TimeEntry) => void;
+  onDelete: (entryId: string) => void;
 }
 
-export function EditTimeEntryDialog({ entry, onClose, onSave }: EditTimeEntryDialogProps) {
+export function EditTimeEntryDialog({ isOpen, entry, onClose, onUpdate, onDelete }: EditTimeEntryDialogProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -53,7 +55,7 @@ export function EditTimeEntryDialog({ entry, onClose, onSave }: EditTimeEntryDia
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onSave({
+    onUpdate({
       ...entry,
       ...values,
       date: values.date.toISOString().split('T')[0],
@@ -62,7 +64,7 @@ export function EditTimeEntryDialog({ entry, onClose, onSave }: EditTimeEntryDia
   }
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Eintrag bearbeiten</DialogTitle>
@@ -109,6 +111,10 @@ export function EditTimeEntryDialog({ entry, onClose, onSave }: EditTimeEntryDia
               )}
             />
             <DialogFooter>
+              <Button type="button" variant="destructive" onClick={() => onDelete(entry.id)}>
+                Löschen
+              </Button>
+              <div className="flex-grow" />
               <DialogClose asChild>
                 <Button type="button" variant="secondary">
                   Abbrechen

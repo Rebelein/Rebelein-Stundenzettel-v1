@@ -18,6 +18,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from './auth-provider';
 
 const formSchema = z.object({
   date: z.date({
@@ -32,15 +34,12 @@ const formSchema = z.object({
 });
 
 type TimeEntryFormProps = {
-  addEntry: (newEntry: {
-    date: Date;
-    customer: string;
-    hours: number;
-  }) => void;
+  onEntryCreated: () => void;
 };
 
-export function TimeEntryForm({ addEntry }: TimeEntryFormProps) {
+export function TimeEntryForm({ onEntryCreated }: TimeEntryFormProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -50,13 +49,29 @@ export function TimeEntryForm({ addEntry }: TimeEntryFormProps) {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    addEntry(values);
-    form.reset({ ...form.getValues(), customer: '', hours: 0 });
-    toast({
-      title: 'Eintrag hinzugefügt',
-      description: `Eintrag für ${values.customer} wurde gespeichert.`,
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) return;
+
+    const { error } = await supabase.from('time_entries').insert({
+      ...values,
+      user_id: user.id,
+      date: values.date.toISOString().slice(0, 10), // Format date to YYYY-MM-DD
     });
+
+    if (error) {
+      toast({
+        title: 'Fehler',
+        description: `Fehler beim Speichern des Eintrags: ${error.message}`,
+        variant: 'destructive',
+      });
+    } else {
+      onEntryCreated();
+      form.reset({ ...form.getValues(), customer: '', hours: 0 });
+      toast({
+        title: 'Eintrag hinzugefügt',
+        description: `Eintrag für ${values.customer} wurde gespeichert.`,
+      });
+    }
   }
 
   return (

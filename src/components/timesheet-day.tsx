@@ -21,8 +21,6 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
-import { useState } from 'react';
-import { EditTimeEntryDialog } from './edit-time-entry-dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,15 +35,10 @@ import {
 
 interface TimesheetDayProps {
   date: Date;
-  user: User | undefined;
   entries: TimeEntry[];
-  updateEntry: (entry: TimeEntry) => void;
-  deleteEntry: (entryId: string) => void;
 }
 
-export function TimesheetDay({ date, user, entries, updateEntry, deleteEntry }: TimesheetDayProps) {
-  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
-
+export function TimesheetDay({ date, entries }: TimesheetDayProps) {
   const totalHours = entries.reduce((sum, entry) => sum + entry.hours, 0);
 
   const formattedDate = date.toLocaleDateString('de-DE', {
@@ -62,9 +55,8 @@ export function TimesheetDay({ date, user, entries, updateEntry, deleteEntry }: 
         <div className="flex justify-between items-start">
             <div>
                 <CardTitle className="font-headline text-2xl">Stundenzettel</CardTitle>
-                <CardDescription className="text-muted-foreground">{user?.name || 'Kein Benutzer'}</CardDescription>
+                <CardDescription className="text-muted-foreground">{formattedDate}</CardDescription>
             </div>
-            <p className="text-sm text-right text-gray-600">{formattedDate}</p>
         </div>
       </CardHeader>
       
@@ -74,7 +66,6 @@ export function TimesheetDay({ date, user, entries, updateEntry, deleteEntry }: 
             <TableRow>
               <TableHead className="w-3/4">Kunde / Tätigkeit</TableHead>
               <TableHead className="text-right">Stunden</TableHead>
-              <TableHead className="text-right">Aktion</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -83,30 +74,6 @@ export function TimesheetDay({ date, user, entries, updateEntry, deleteEntry }: 
                 <TableRow key={entry.id}>
                   <TableCell>{entry.customer}</TableCell>
                   <TableCell className="text-right">{entry.hours.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => setEditingEntry(entry)}>
-                        <Pencil className="h-4 w-4 text-blue-500" />
-                    </Button>
-                     <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                         <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Eintrag wirklich löschen?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Diese Aktion kann nicht rückgängig gemacht werden. Der Zeiteintrag wird dauerhaft gelöscht.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteEntry(entry.id)}>Löschen</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
                 </TableRow>
               ))
             ) : (
@@ -120,7 +87,7 @@ export function TimesheetDay({ date, user, entries, updateEntry, deleteEntry }: 
           <TableFooter>
              <TableRow>
                 <TableCell className="font-bold">Gesamt</TableCell>
-                <TableCell className="text-right font-bold" colSpan={2}>{totalHours.toFixed(2)}</TableCell>
+                <TableCell className="text-right font-bold">{totalHours.toFixed(2)}</TableCell>
             </TableRow>
           </TableFooter>
         </Table>
@@ -136,16 +103,6 @@ export function TimesheetDay({ date, user, entries, updateEntry, deleteEntry }: 
         </div>
       </CardFooter>
     </Card>
-    {editingEntry && (
-        <EditTimeEntryDialog 
-            entry={editingEntry}
-            onClose={() => setEditingEntry(null)}
-            onSave={(updatedEntry) => {
-                updateEntry(updatedEntry);
-                setEditingEntry(null);
-            }}
-        />
-    )}
     </>
   );
 }

@@ -15,3 +15,22 @@ CREATE POLICY "Allow full access to own time entries"
 ON time_entries
 FOR ALL
 USING (auth.uid() = user_id);
+
+-- Create the target_hours table
+CREATE TABLE target_hours (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    monday FLOAT8 NOT NULL DEFAULT 8,
+    tuesday FLOAT8 NOT NULL DEFAULT 8,
+    wednesday FLOAT8 NOT NULL DEFAULT 8,
+    thursday FLOAT8 NOT NULL DEFAULT 8,
+    friday FLOAT8 NOT NULL DEFAULT 8
+);
+
+-- Enable Row Level Security for target_hours
+ALTER TABLE target_hours ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Users can insert, update, and delete their own target hours
+CREATE POLICY "Allow full access to own target hours"
+ON target_hours
+FOR ALL
+USING (auth.uid() = user_id);
