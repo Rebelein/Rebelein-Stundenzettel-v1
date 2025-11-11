@@ -17,6 +17,7 @@ import {
   Loader2,
   BarChart,
   LogOut,
+  User as UserIcon,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -41,9 +42,10 @@ import { startOfMonth, endOfMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { WorkHoursAnalysis } from './work-hours-analysis';
+import { ProfileManagement } from './profile-management';
 
 
-type View = 'new-entry' | 'overview' | 'analysis';
+type View = 'new-entry' | 'overview' | 'analysis' | 'profile';
 
 export function TimesheetApp() {
   const { user: authUser } = useAuth();
@@ -179,6 +181,8 @@ export function TimesheetApp() {
     }, {} as Record<string, TimeEntry[]>);
 
     const sortedDays = Object.keys(entriesByDate).sort();
+    const userName = authUser.user_metadata.full_name || authUser.email;
+
 
     const drawTimesheet = (dayDate: string, xOffset: number) => {
         const entries = entriesByDate[dayDate];
@@ -200,7 +204,7 @@ export function TimesheetApp() {
         
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        doc.text(authUser.email!, xOffset + margin, margin + 7);
+        doc.text(userName!, xOffset + margin, margin + 7);
         doc.text(formattedDate, xOffset + a5Width - margin, margin + 7, { align: 'right' });
         
         // Table
@@ -254,7 +258,7 @@ export function TimesheetApp() {
     }
     
     const month = currentDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
-    doc.save(`Stundenzettel-${authUser.email?.replace(/[@.]/g, '_')}-${month}.pdf`);
+    doc.save(`Stundenzettel-${userName?.replace(/[@.\s]/g, '_')}-${month}.pdf`);
 
     setIsDownloading(false);
   };
@@ -276,13 +280,14 @@ export function TimesheetApp() {
     'new-entry': 'Neuer Eintrag',
     overview: 'Monatsübersicht',
     analysis: 'Soll-Ist-Analyse',
+    profile: 'Profil',
   };
 
   if (currentDate === undefined || !authUser) {
     return <div className="flex items-center justify-center h-screen">Wird geladen...</div>;
   }
   
-  const user = { id: authUser.id, name: authUser.email || '' };
+  const user = { id: authUser.id, name: authUser.user_metadata.full_name || authUser.email || '' };
 
   return (
     <SidebarProvider>
@@ -327,6 +332,16 @@ export function TimesheetApp() {
                   Analyse
                 </SidebarMenuButton>
               </SidebarMenuItem>
+               <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setActiveView('profile')}
+                  isActive={activeView === 'profile'}
+                  tooltip="Profil"
+                >
+                  <UserIcon />
+                  Profil
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
           <SidebarHeader>
@@ -350,9 +365,10 @@ export function TimesheetApp() {
                     {viewTitles[activeView]}
                   </h1>
                  </div>
-                 <p className="text-muted-foreground">{authUser.email}</p>
+                 <p className="text-muted-foreground">{user.name}</p>
               </header>
 
+              {activeView === 'profile' && <ProfileManagement />}
               {activeView === 'new-entry' && <TimeEntryForm addEntry={addEntry} />}
               
               {(activeView === 'overview' || activeView === 'analysis') && (
