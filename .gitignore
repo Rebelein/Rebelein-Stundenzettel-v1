@@ -45,3 +45,6 @@ firebase-debug.log
 firestore-debug.log
 
 .env.local
+
+# custom
+dev_server.log
