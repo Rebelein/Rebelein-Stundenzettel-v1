@@ -8,12 +8,12 @@
   "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "https://sander-doll.com/files/images/handwerker-app/zeiterfassung/zeiterfassung-app-handwerk_icon_flexibel.webp",
+      "src": "/app-icon.webp",
       "sizes": "192x192",
       "type": "image/webp"
     },
     {
-      "src": "https://sander-doll.com/files/images/handwerker-app/zeiterfassung/zeiterfassung-app-handwerk_icon_flexibel.webp",
+      "src": "/app-icon.webp",
       "sizes": "512x512",
       "type": "image/webp"
     }

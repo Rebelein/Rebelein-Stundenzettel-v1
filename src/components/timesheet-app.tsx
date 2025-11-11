@@ -156,77 +156,111 @@ export function TimesheetApp() {
      if (error) console.error("Error deleting entry:", error);
   }
 
-  // Helper function to draw a single day's report on an A5 section of the page
   const drawDayOnPage = (
-      doc: jsPDF,
-      date: Date,
-      entries: TimeEntry[],
-      userName: string,
-      offsetX: number // 0 for left A5, 148.5 for right A5
+    doc: jsPDF,
+    date: Date,
+    entries: TimeEntry[],
+    userName: string,
+    offsetX: number // 0 for left A5, 148.5 for right A5
   ) => {
-      const formattedDate = date.toLocaleDateString('de-DE', {
-          weekday: 'long',
-          day: '2-digit',
-          month: 'long',
-          year: 'numeric',
-      });
+    // Correct date formatting by avoiding timezone issues
+    const formattedDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000)
+        .toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-      const a5Width = 148.5;
-      const tableWidth = 100; // Define a fixed, narrower width for the table
-      const sideMargin = (a5Width - tableWidth) / 2; // Calculate margin to center the table
-      const leftMargin = offsetX + sideMargin;
+    const a5Width = 148.5;
+    const contentWidth = 120; // A bit wider for better spacing
+    const sideMargin = (a5Width - contentWidth) / 2;
+    const leftMargin = offsetX + sideMargin;
+    const rightMargin = offsetX + a5Width - sideMargin;
 
-      // Header
-      const topMargin = 20;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('Stundenzettel', leftMargin, topMargin);
+    let currentY = 20; // Top margin
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.text(userName, leftMargin, topMargin + 7);
-      doc.text(formattedDate, offsetX + a5Width - sideMargin, topMargin + 7, { align: 'right' });
+    // --- Header ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text(`Monteur: ${userName}`, leftMargin, currentY);
+    doc.text(formattedDate, rightMargin, currentY, { align: 'right' });
+    currentY += 10;
 
-      // Table
-      const tableBody: (string | number)[][] = [];
-      entries.forEach(entry => {
-          tableBody.push([
-              entry.customer,
-              entry.hours.toFixed(2).replace('.', ',')
-          ]);
-      });
+    // --- Table ---
+    const tableTopY = currentY;
+    const rowHeight = 8;
+    const col1X = leftMargin;
+    const col2X = rightMargin - 25; // Start of the "Hours" column
+    const tableRightX = rightMargin;
+    const descriptionColWidth = col2X - col1X;
 
-      const totalHours = entries.reduce((sum, entry) => sum + entry.hours, 0);
+    // Table Header
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.2);
 
-      (doc as any).autoTable({
-          startY: topMargin + 14,
-          head: [['Kunde / Tätigkeit', 'Stunden']],
-          body: tableBody,
-          foot: [['Gesamt', totalHours.toFixed(2).replace('.', ',')]],
-          theme: 'striped',
-          styles: { font: 'helvetica', fontSize: 10 },
-          headStyles: { fontStyle: 'bold', fillColor: [220, 220, 220], textColor: 0 },
-          footStyles: { fontStyle: 'bold', fillColor: [220, 220, 220], textColor: 0 },
-          columnStyles: {
-              0: { halign: 'left' },
-              1: { halign: 'right', cellWidth: 25 },
-          },
-          margin: { left: leftMargin },
-          tableWidth: tableWidth,
-      });
+    // Header Rect
+    doc.rect(col1X, currentY, tableRightX - col1X, rowHeight);
+    doc.line(col2X, currentY, col2X, currentY + rowHeight);
 
-      // Footer (Unterschrift)
-      const tableEndY = (doc as any).lastAutoTable.finalY;
-      const signatureY = tableEndY + 20;
-      const signatureX1 = leftMargin;
-      const signatureX2 = offsetX + a5Width - sideMargin;
+    // Header Text
+    doc.text('Baustelle - Tätigkeit', col1X + 2, currentY + 5);
+    doc.text('Stunden', col2X + 2, currentY + 5);
+    currentY += rowHeight;
 
-      doc.line(signatureX1, signatureY, signatureX1 + 40, signatureY);
-      doc.text('Unterschrift', signatureX1, signatureY + 5);
+    // Table Body (Open Design)
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
 
-      doc.line(signatureX2 - 40, signatureY, signatureX2, signatureY);
-      doc.text('Unterschrift', signatureX2, signatureY + 5, { align: 'right' });
-  };
+    const maxRows = 13;
+    const tableBodyStartY = currentY;
+
+    let entryY = tableBodyStartY;
+    let rowsUsed = 0;
+
+    for (const entry of entries) {
+        if (rowsUsed >= maxRows) break;
+
+        const maxTextWidth = descriptionColWidth - 4;
+        const customerText = doc.splitTextToSize(entry.customer, maxTextWidth);
+
+        doc.text(customerText[0], col1X + 2, entryY + 5);
+        doc.text(entry.hours.toFixed(2).replace('.', ','), col2X + 2, entryY + 5);
+
+        entryY += rowHeight; // Move to the next line for the text
+        rowsUsed++;
+
+        // Add space for a blank line, if there's room
+        if (rowsUsed < maxRows) {
+            entryY += rowHeight;
+            rowsUsed++;
+        }
+    }
+
+    const tableBodyHeight = maxRows * rowHeight;
+    const tableBottomY = tableTopY + rowHeight + tableBodyHeight;
+
+    // Draw table borders (outer box and vertical line)
+    doc.rect(col1X, tableTopY, tableRightX - col1X, tableBottomY - tableTopY + rowHeight); // Outer box for header, body, and footer
+    doc.line(col2X, tableTopY, col2X, tableBottomY); // Vertical line for hours
+
+    currentY = tableBottomY;
+
+    // --- Footer ---
+    const totalHours = entries.reduce((sum, entry) => sum + entry.hours, 0);
+
+    // Footer Text is drawn over the bottom border of the main table rectangle
+    doc.setFont('helvetica', 'bold');
+    const footerTextY = tableBottomY + 5;
+    doc.text('Gesamtstunden', col1X + 2, footerTextY);
+    doc.text(totalHours.toFixed(2).replace('.', ','), col2X + 2, footerTextY);
+    currentY += rowHeight;
+
+    currentY += 5; // Extra space before the final line
+
+    // --- Company Info ---
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    const companyInfo = "Stefan Rebelein Sanitär GmbH, Martin-Behaim-Str. 6, 90765 Fürth";
+    doc.text(companyInfo, leftMargin, currentY);
+};
 
   const handleDownloadPdf = async () => {
     if (!authUser || !downloadStartDate || !downloadEndDate) {
@@ -285,7 +319,8 @@ export function TimesheetApp() {
             drawDayOnPage(doc, date2, entries2, userName, a5Width);
         }
     }
-    
+
+    // Download the PDF
     const startStr = downloadStartDate.toLocaleDateString('de-DE', { year: '2-digit', month: '2-digit', day: '2-digit' }).replace(/\./g, '-');
     const endStr = downloadEndDate.toLocaleDateString('de-DE', { year: '2-digit', month: '2-digit', day: '2-digit' }).replace(/\./g, '-');
     doc.save(`Stundenzettel_${userName?.replace(/[@.\s]/g, '_')}_${startStr}_-_${endStr}.pdf`);
