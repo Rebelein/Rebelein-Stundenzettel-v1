@@ -110,9 +110,17 @@ export function TimesheetApp() {
     hours: number;
   }) => {
     if (!authUser) return;
+
+    // Correctly format the date to a local YYYY-MM-DD string
+    const localDate = new Date(newEntry.date);
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+
     const { error } = await supabase.from('time_entries').insert({
       ...newEntry,
-      date: newEntry.date.toISOString().split('T')[0],
+      date: formattedDate,
       user_id: authUser.id,
     });
     if (error) {
@@ -123,10 +131,17 @@ export function TimesheetApp() {
   };
   
   const updateEntry = async (updatedEntry: TimeEntry) => {
+    // Correctly format the date to a local YYYY-MM-DD string
+    const localDate = new Date(updatedEntry.date);
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+
     const { error } = await supabase
       .from('time_entries')
       .update({
-        date: updatedEntry.date,
+        date: formattedDate,
         customer: updatedEntry.customer,
         hours: updatedEntry.hours,
       })
