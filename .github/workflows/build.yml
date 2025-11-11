@@ -11,7 +11,6 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,22 +28,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Convert repo name to lowercase
-        id: repo_lowercase
-        run: echo "name=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: |
             docker.io/${{ secrets.DOCKERHUB_USERNAME }}/stundenzettel
-            ghcr.io/${{ steps.repo_lowercase.outputs.name }}
+            ghcr.io/${{ github.repository }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
-            type=sha,prefix={{branch}}-
+            type=sha,format=short,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
+          flavor: |
+            latest=auto
+            prefix=
+            suffix=
+            lowercase=true
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
