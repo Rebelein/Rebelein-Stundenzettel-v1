@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import type { User, TimeEntry } from '@/lib/types';
+import type { TimeEntry } from '@/lib/types';
 import { useAuth } from './auth-provider';
 import { supabase } from '@/lib/supabaseClient';
 import { TimeEntryForm } from './time-entry-form';
@@ -40,16 +40,14 @@ import { Label } from '@/components/ui/label';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { UserManagement } from './user-management';
 import { WorkHoursAnalysis } from './work-hours-analysis';
 
 
-type View = 'new-entry' | 'overview' | 'users' | 'analysis';
+type View = 'new-entry' | 'overview' | 'analysis';
 
 export function TimesheetApp() {
   const { user: authUser } = useAuth();
   const [allEntries, setAllEntries] = useState<TimeEntry[]>([]);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [currentDate, setCurrentDate] = useState<Date | undefined>(new Date());
   const [downloadStartDate, setDownloadStartDate] = useState<Date | undefined>(startOfMonth(new Date()));
   const [downloadEndDate, setDownloadEndDate] = useState<Date | undefined>(endOfMonth(new Date()));
@@ -60,16 +58,6 @@ export function TimesheetApp() {
     if (!authUser) return;
 
     const fetchInitialData = async () => {
-      // Fetch user profile
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authUser.id)
-        .single();
-
-      if (userError) console.error('Error fetching user:', userError);
-      else setSelectedUser(userData);
-
       // Fetch time entries
       const { data: entriesData, error: entriesError } = await supabase
         .from('time_entries')
@@ -109,7 +97,7 @@ export function TimesheetApp() {
     };
   }, [authUser]);
 
-  const userEntries = allEntries.filter((e) => e.userId === selectedUser?.id).filter(entry => {
+    const monthlyEntries = allEntries.filter(entry => {
       if (!currentDate) return false;
       const entryDate = new Date(entry.date);
       return entryDate.getFullYear() === currentDate.getFullYear() && entryDate.getMonth() === currentDate.getMonth();
@@ -152,10 +140,9 @@ export function TimesheetApp() {
   }
 
   const handleDownloadPdf = async () => {
-    if (!selectedUser || !currentDate || !downloadStartDate || !downloadEndDate) return;
+    if (!authUser || !currentDate || !downloadStartDate || !downloadEndDate) return;
 
     const entriesToDownload = allEntries.filter(entry => {
-        if (entry.userId !== selectedUser?.id) return false;
         const entryDate = new Date(entry.date);
         const inclusiveEndDate = new Date(downloadEndDate);
         inclusiveEndDate.setDate(inclusiveEndDate.getDate() + 1);
@@ -198,7 +185,7 @@ export function TimesheetApp() {
         
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        doc.text(selectedUser.name, xOffset + margin, margin + 7);
+        doc.text(authUser.email!, xOffset + margin, margin + 7);
         doc.text(formattedDate, xOffset + a5Width - margin, margin + 7, { align: 'right' });
         
         // Table
@@ -252,7 +239,7 @@ export function TimesheetApp() {
     }
     
     const month = currentDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
-    doc.save(`Stundenzettel-${selectedUser?.name?.replace(' ','_')}-${month}.pdf`);
+    doc.save(`Stundenzettel-${authUser.email?.replace(/[@.]/g, '_')}-${month}.pdf`);
 
     setIsDownloading(false);
   };
@@ -273,14 +260,15 @@ export function TimesheetApp() {
   const viewTitles: Record<View, string> = {
     'new-entry': 'Neuer Eintrag',
     overview: 'Monatsübersicht',
-    users: 'Benutzerverwaltung',
     analysis: 'Soll-Ist-Analyse',
   };
 
-  if (currentDate === undefined || !selectedUser) {
+  if (currentDate === undefined || !authUser) {
     return <div className="flex items-center justify-center h-screen">Wird geladen...</div>;
   }
   
+  const user = { id: authUser.id, name: authUser.email || '' };
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -347,7 +335,7 @@ export function TimesheetApp() {
                     {viewTitles[activeView]}
                   </h1>
                  </div>
-                 <p className="text-muted-foreground">{selectedUser?.name}</p>
+                 <p className="text-muted-foreground">{authUser.email}</p>
               </header>
 
               {activeView === 'new-entry' && <TimeEntryForm addEntry={addEntry} />}
@@ -400,8 +388,8 @@ export function TimesheetApp() {
             
             {activeView === 'analysis' && (
                 <WorkHoursAnalysis 
-                    entries={userEntries}
-                    user={selectedUser}
+                    entries={monthlyEntries}
+                    user={user}
                     currentDate={currentDate}
                 />
             )}
@@ -409,8 +397,8 @@ export function TimesheetApp() {
             {activeView === 'overview' && (
               <div className="mt-8 print:mt-0">
                  <MonthlyOverview
-                  entries={userEntries}
-                  user={selectedUser}
+                  entries={monthlyEntries}
+                  user={user}
                   currentDate={currentDate}
                   updateEntry={updateEntry}
                   deleteEntry={deleteEntry}

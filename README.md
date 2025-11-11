@@ -1,45 +1,53 @@
 # Rebelein Stundenzettel
 
-Eine Next.js-Anwendung für Stundenzettel-Verwaltung mit Supabase Backend.
+Eine Next.js-Anwendung für die Stundenzettel-Verwaltung mit Supabase als Backend.
 
-## Lokaler Betrieb mit Portainer und Supabase
+## Einrichtung und Bereitstellung
 
-### Voraussetzungen
-- Docker und Docker Compose
-- Portainer (für Container-Management)
-- GitHub-Account (für GHCR)
+Diese Anwendung ist so konzipiert, dass sie auf jeder modernen App-Hosting-Plattform (wie Netlify, Vercel oder ähnlichen) bereitgestellt werden kann.
 
-### Setup
+### 1. Supabase-Projekt einrichten
 
-1. **GitHub Actions Build**
-   - Der Workflow in `.github/workflows/build.yml` baut automatisch das Docker-Image bei Push zu `feat-liquid-glass-redesign` und pusht es zu GitHub Container Registry (GHCR).
+1.  **Erstellen Sie ein neues Projekt** in Ihrem [Supabase Dashboard](https://supabase.com/dashboard).
+2.  **Datenbankschema anwenden:**
+    *   Navigieren Sie zum **SQL Editor** in Ihrem Supabase-Projekt.
+    *   Öffnen Sie die Datei `supabase/schema.sql` aus diesem Repository.
+    *   Kopieren Sie den gesamten Inhalt der Datei, fügen Sie ihn in den SQL-Editor ein und klicken Sie auf **"RUN"**. Dies erstellt die `time_entries`-Tabelle und konfiguriert die "Row Level Security"-Richtlinien, um die Daten der Benutzer zu schützen.
 
-2. **Lokaler Supabase starten**
-   ```bash
-   cd supabase
-   docker-compose up -d
-   ```
-   - Supabase läuft dann auf `http://localhost:8000` (API) und `http://localhost:5433` (Studio).
+### 2. Anwendung konfigurieren
 
-3. **Anwendung mit Portainer deployen**
-   - Öffne Portainer und erstelle einen neuen Stack.
-   - Verwende die `docker-compose.local.yml` als Compose-Datei.
-   - Stelle sicher, dass die Umgebungsvariablen gesetzt sind:
-     - `NEXT_PUBLIC_SUPABASE_URL=http://host.docker.internal:8000` (für host networking) oder passe an deinen Setup an.
-     - `NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0`
+1.  **Umgebungsvariablen abrufen:**
+    *   Gehen Sie in Ihrem Supabase-Projekt zu **Settings > API**.
+    *   Kopieren Sie die **Project URL**.
+    *   Kopieren Sie den **`anon` `public`** Schlüssel.
 
-4. **Zugriff**
-   - App: `http://localhost:3000`
-   - Supabase Studio: `http://localhost:5433`
+2.  **Umgebungsvariablen für die Bereitstellung festlegen:**
+    *   Konfigurieren Sie die folgenden Umgebungsvariablen auf Ihrer Hosting-Plattform:
+        *   `NEXT_PUBLIC_SUPABASE_URL`: Die URL Ihres Supabase-Projekts.
+        *   `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Der `anon` `public`-Schlüssel Ihres Projekts.
 
-### Entwicklung
-- `npm run dev` für lokale Entwicklung.
-- `npm run build` für Produktions-Build.
+### 3. Lokale Entwicklung (Optional)
 
----
+1.  **Repository klonen.**
+2.  **Abhängigkeiten installieren:**
+    ```bash
+    npm install
+    ```
+3.  **`.env.local`-Datei erstellen:**
+    *   Erstellen Sie eine Datei namens `.env.local` im Hauptverzeichnis des Projekts.
+    *   Fügen Sie Ihre Supabase-Anmeldeinformationen wie folgt hinzu:
+        ```
+        NEXT_PUBLIC_SUPABASE_URL=IHRE_SUPABASE_URL
+        NEXT_PUBLIC_SUPABASE_ANON_KEY=IHR_ANON_PUBLIC_KEY
+        ```
+4.  **Entwicklungsserver starten:**
+    ```bash
+    npm run dev
+    ```
+    Die Anwendung ist nun unter `http://localhost:9002` verfügbar.
 
-# Firebase Studio
-
-Dies ist ein NextJS-Starter in Firebase Studio.
-
-Um loszulegen, siehe src/app/page.tsx.
+### Verwendete Technologien
+- [Next.js](https://nextjs.org/)
+- [Supabase](https://supabase.io/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [shadcn/ui](https://ui.shadcn.com/)
