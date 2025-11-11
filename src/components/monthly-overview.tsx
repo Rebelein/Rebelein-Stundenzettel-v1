@@ -7,18 +7,13 @@ import { Card } from '@/components/ui/card';
 
 interface MonthlyOverviewProps {
   entries: TimeEntry[];
-  user: User | undefined;
   currentDate: Date;
-  updateEntry: (entry: TimeEntry) => void;
-  deleteEntry: (entryId: string) => void;
+  onEntrySelect: (entry: TimeEntry) => void;
 }
 
 export function MonthlyOverview({
   entries,
-  user,
-  currentDate,
-  updateEntry,
-  deleteEntry,
+  onEntrySelect,
 }: MonthlyOverviewProps) {
   
   const daysWithEntries = useMemo(() => {
@@ -44,17 +39,17 @@ export function MonthlyOverview({
     <>
       {/* Responsive tile view for screen */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-8 py-4">
-        {sortedDays.map(day => (
-          <Card key={day.toISOString()}>
-            <TimesheetDay
-              date={day}
-              user={user}
-              entries={entries.filter(e => e.date === day.toISOString().split('T')[0])}
-              updateEntry={updateEntry}
-              deleteEntry={deleteEntry}
-            />
-          </Card>
-        ))}
+        {sortedDays.map(day => {
+          const dayEntries = entries.filter(e => e.date === day.toISOString().split('T')[0]);
+          return (
+            <Card key={day.toISOString()} onClick={() => onEntrySelect(dayEntries[0])} className="cursor-pointer">
+              <TimesheetDay
+                date={day}
+                entries={dayEntries}
+              />
+            </Card>
+          )
+        })}
       </div>
     </>
   );
