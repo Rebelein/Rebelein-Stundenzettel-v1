@@ -1,0 +1,26 @@
+
+> nextn@0.1.0 start
+> next start -p 31337
+
+   ▲ Next.js 15.3.3
+   - Local:        http://localhost:31337
+   - Network:      http://192.168.0.2:31337
+
+ ✓ Starting...
+ ✓ Ready in 1483ms
+ ⨯ [Error: Cannot find module './vendor-chunks/@babel.js'
+Require stack:
+- /app/.next/server/webpack-runtime.js
+- /app/.next/server/app/page.js
+- /app/node_modules/next/dist/server/require.js
+- /app/node_modules/next/dist/server/load-components.js
+- /app/node_modules/next/dist/build/utils.js
+- /app/node_modules/next/dist/build/swc/options.js
+- /app/node_modules/next/dist/build/swc/index.js
+- /app/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /app/node_modules/next/dist/server/config.js
+- /app/node_modules/next/dist/cli/next-test.js
+- /app/node_modules/next/dist/bin/next] {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
