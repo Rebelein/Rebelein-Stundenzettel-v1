@@ -50,3 +50,5 @@ firestore-debug.log
 *.log
 public/sw.js
 public/workbox-*.js
+playwright-report/
+test-results/
