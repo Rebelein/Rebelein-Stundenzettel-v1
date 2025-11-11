@@ -157,109 +157,104 @@ export function TimesheetApp() {
   }
 
   const handleDownloadPdf = async () => {
-    if (!authUser || !currentDate || !downloadStartDate || !downloadEndDate) return;
+    if (!authUser || !currentDate) return;
 
-    const entriesToDownload = allEntries.filter(entry => {
-        const entryDate = new Date(entry.date);
-        const inclusiveEndDate = new Date(downloadEndDate);
-        inclusiveEndDate.setDate(inclusiveEndDate.getDate() + 1);
-        return entryDate >= downloadStartDate && entryDate < inclusiveEndDate;
-    });
+    const selectedDateStr = currentDate.toISOString().split('T')[0];
+    const entriesForDay = allEntries.filter(e => e.date === selectedDateStr);
 
-    if (entriesToDownload.length === 0) {
-        alert("Keine Einträge im ausgewählten Zeitraum gefunden.");
+    if (entriesForDay.length === 0) {
+        alert("Für den ausgewählten Tag gibt es keine Einträge zum Herunterladen.");
         return;
     }
     
     setIsDownloading(true);
 
-    const doc = new jsPDF('landscape', 'mm', 'a4');
-    
-    const entriesByDate = entriesToDownload.reduce((acc, entry) => {
-        (acc[entry.date] = acc[entry.date] || []).push(entry);
-        return acc;
-    }, {} as Record<string, TimeEntry[]>);
-
-    const sortedDays = Object.keys(entriesByDate).sort();
+    const doc = new jsPDF('p', 'mm', 'a4'); // p for portrait
     const userName = authUser.user_metadata.full_name || authUser.email;
+    const formattedDate = new Date(currentDate).toLocaleDateString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+    });
 
+    const margin = 15;
+    const pageWidth = doc.internal.pageSize.getWidth();
 
-    const drawTimesheet = (dayDate: string, xOffset: number) => {
-        const entries = entriesByDate[dayDate];
-        const totalHours = entries.reduce((sum, entry) => sum + entry.hours, 0);
-        const formattedDate = new Date(dayDate).toLocaleDateString('de-DE', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        });
-        
-        const a5Width = 148;
-        const margin = 15;
+    // Header
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Monteur: ${userName}`, margin, margin);
+    doc.text(formattedDate, pageWidth - margin, margin, { align: 'right' });
 
-        // Header
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Stundenzettel', xOffset + margin, margin);
-        
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text(userName!, xOffset + margin, margin + 7);
-        doc.text(formattedDate, xOffset + a5Width - margin, margin + 7, { align: 'right' });
-        
-        // Table
-        (doc as any).autoTable({
-            startY: margin + 15,
-            head: [['Kunde / Tätigkeit', 'Stunden']],
-            body: entries.map(e => [e.customer, e.hours.toFixed(2)]),
-            foot: [['Gesamt', totalHours.toFixed(2)]],
-            margin: { left: xOffset + margin, right: 297 - (xOffset + a5Width - margin)},
-            theme: 'grid',
-            styles: {
-                font: 'helvetica',
-                fontSize: 10,
-                cellPadding: 2,
-            },
-            headStyles: {
-                fontStyle: 'bold',
-                fillColor: [230, 230, 230],
-                textColor: 20
-            },
-            footStyles: {
-                fontStyle: 'bold',
-                fillColor: [230, 230, 230],
-                textColor: 20
-            },
-            columnStyles: {
-                1: { halign: 'right' },
-            },
-        });
-        
-        const finalY = (doc as any).lastAutoTable.finalY;
+    const tableBody: (string | number)[][] = [];
+    const timeSlots = Array.from({ length: 13 }, (_, i) => i + 7); // 7 to 19
 
-        // Footer Signatures
-        const signatureY = 210 - margin - 15;
-        doc.line(xOffset + margin, signatureY, xOffset + margin + 50, signatureY);
-        doc.text('Unterschrift', xOffset + margin, signatureY + 5);
+    let entryIndex = 0;
+    for (let i = 0; i < timeSlots.length; i++) {
+        const hour = timeSlots[i];
 
-        doc.line(xOffset + a5Width - margin - 50, signatureY, xOffset + a5Width - margin, signatureY);
-        doc.text('Unterschrift', xOffset + a5Width - margin - 50, signatureY + 5);
-    };
-
-    for (let i = 0; i < sortedDays.length; i += 2) {
-      if (i > 0) {
-        doc.addPage();
-      }
-      drawTimesheet(sortedDays[i], 0);
-
-      if (sortedDays[i + 1]) {
-        drawTimesheet(sortedDays[i + 1], 148.5);
-      }
+        // Place entries in every other row, starting with the first one (7 Uhr)
+        if (i % 2 === 0 && entryIndex < entriesForDay.length) {
+            const entry = entriesForDay[entryIndex];
+            tableBody.push([
+                hour.toString(),
+                entry.customer,
+                entry.hours.toFixed(2).replace('.', ',')
+            ]);
+            entryIndex++;
+        } else {
+            tableBody.push([hour.toString(), '', '']);
+        }
     }
-    
-    const month = currentDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
-    doc.save(`Stundenzettel-${userName?.replace(/[@.\s]/g, '_')}-${month}.pdf`);
 
+    const totalHours = entriesForDay.reduce((sum, entry) => sum + entry.hours, 0);
+
+    (doc as any).autoTable({
+        startY: margin + 10,
+        head: [['Uhr', 'Baustelle - Tätigkeit', 'Stunden']],
+        body: tableBody,
+        theme: 'grid',
+        styles: {
+            font: 'helvetica',
+            fontSize: 10,
+            cellPadding: 2,
+        },
+        headStyles: {
+            fontStyle: 'bold',
+            fillColor: [255, 255, 255],
+            textColor: 0,
+            lineWidth: 0.1,
+            lineColor: [0, 0, 0]
+        },
+        columnStyles: {
+            0: { halign: 'center', cellWidth: 15 },
+            1: { halign: 'left' },
+            2: { halign: 'right', cellWidth: 25 },
+        },
+        didDrawPage: (data: any) => {
+            // Draw Gesamtstunden below the table
+            const tableEndY = data.cursor.y;
+            const textY = tableEndY + 8;
+
+            doc.setFont('helvetica', 'bold');
+            doc.text('Gesamtstunden', margin, textY);
+
+            const totalHoursText = totalHours.toFixed(2).replace('.', ',');
+            const hoursColumnX = pageWidth - margin - 25; // Align with the right edge of the 'Stunden' column
+            doc.text(totalHoursText, hoursColumnX + 25, textY, { align: 'right' });
+        }
+    });
+
+    const pageHeight = doc.internal.pageSize.getHeight();
+    doc.setFontSize(10);
+    doc.text(
+        'Stefan Rebelein Sanitär GmbH, Martin-Behaim-Str. 6, 90765 Fürth',
+        pageWidth / 2,
+        pageHeight - margin + 10,
+        { align: 'center' }
+    );
+    
+    doc.save(`Stundenzettel_${userName?.replace(/[@.\s]/g, '_')}_${selectedDateStr}.pdf`);
     setIsDownloading(false);
   };
   
@@ -383,31 +378,22 @@ export function TimesheetApp() {
                     </Button>
                   </div>
                    {activeView === 'overview' && (
-                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 rounded-lg border p-4">
-                       <div className="grid gap-2">
-                        <Label htmlFor="download-start">Download Start</Label>
-                        <DatePicker date={downloadStartDate} setDate={setDownloadStartDate} />
-                      </div>
-                       <div className="grid gap-2">
-                        <Label htmlFor="download-end">Download Ende</Label>
-                        <DatePicker date={downloadEndDate} setDate={setDownloadEndDate} />
-                      </div>
-                      <TooltipProvider>
+                     <div className="flex items-center justify-center gap-4 rounded-lg border p-4">
+                       <Label>Tages-PDF herunterladen:</Label>
+                       <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="self-end">
                               <Button variant="outline" size="icon" onClick={handleDownloadPdf} disabled={isDownloading}>
                                 {isDownloading ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
                                   <Download className="h-4 w-4" />
                                 )}
-                                <span className="sr-only">PDF Herunterladen</span>
+                                <span className="sr-only">Tages-PDF Herunterladen</span>
                               </Button>
-                              </div>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Als PDF herunterladen</p>
+                              <p>PDF für den {currentDate.toLocaleDateString('de-DE')} erstellen</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
