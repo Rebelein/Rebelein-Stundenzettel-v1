@@ -165,75 +165,67 @@ export function TimesheetApp() {
       offsetX: number // 0 for left A5, 148.5 for right A5
   ) => {
       const formattedDate = date.toLocaleDateString('de-DE', {
+          weekday: 'long',
           day: '2-digit',
-          month: '2-digit',
+          month: 'long',
           year: 'numeric',
       });
 
-      const margin = 10;
       const a5Width = 148.5;
+      const tableWidth = 100; // Define a fixed, narrower width for the table
+      const sideMargin = (a5Width - tableWidth) / 2; // Calculate margin to center the table
+      const leftMargin = offsetX + sideMargin;
 
       // Header
+      const topMargin = 20;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('Stundenzettel', leftMargin, topMargin);
+
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9); // Slightly smaller font for more space
-      doc.text(`Monteur: ${userName}`, margin + offsetX, margin);
-      doc.text(formattedDate, offsetX + a5Width - margin, margin, { align: 'right' });
+      doc.setFontSize(10);
+      doc.text(userName, leftMargin, topMargin + 7);
+      doc.text(formattedDate, offsetX + a5Width - sideMargin, topMargin + 7, { align: 'right' });
 
+      // Table
       const tableBody: (string | number)[][] = [];
-      const timeSlots = Array.from({ length: 13 }, (_, i) => i + 7); // 7 to 19
-
-      let entryIndex = 0;
-      for (let i = 0; i < timeSlots.length; i++) {
-          const hour = timeSlots[i];
-          if (i % 2 === 0 && entryIndex < entries.length) {
-              const entry = entries[entryIndex];
-              tableBody.push([
-                  hour.toString(),
-                  entry.customer,
-                  entry.hours.toFixed(2).replace('.', ',')
-              ]);
-              entryIndex++;
-          } else {
-              tableBody.push([hour.toString(), '', '']);
-          }
-      }
+      entries.forEach(entry => {
+          tableBody.push([
+              entry.customer,
+              entry.hours.toFixed(2).replace('.', ',')
+          ]);
+      });
 
       const totalHours = entries.reduce((sum, entry) => sum + entry.hours, 0);
 
       (doc as any).autoTable({
-          startY: margin + 5,
-          head: [['Uhr', 'Baustelle - Tätigkeit', 'Std.']],
+          startY: topMargin + 14,
+          head: [['Kunde / Tätigkeit', 'Stunden']],
           body: tableBody,
-          theme: 'grid',
-          styles: { font: 'helvetica', fontSize: 9, cellPadding: 1.5 },
-          headStyles: { fontStyle: 'bold', fillColor: [255, 255, 255], textColor: 0, lineWidth: 0.1, lineColor: [0, 0, 0], fontSize: 9 },
+          foot: [['Gesamt', totalHours.toFixed(2).replace('.', ',')]],
+          theme: 'striped',
+          styles: { font: 'helvetica', fontSize: 10 },
+          headStyles: { fontStyle: 'bold', fillColor: [220, 220, 220], textColor: 0 },
+          footStyles: { fontStyle: 'bold', fillColor: [220, 220, 220], textColor: 0 },
           columnStyles: {
-              0: { halign: 'center', cellWidth: 12 },
-              1: { halign: 'left' },
-              2: { halign: 'right', cellWidth: 15 },
+              0: { halign: 'left' },
+              1: { halign: 'right', cellWidth: 25 },
           },
-          margin: { left: margin + offsetX },
-          didDrawPage: (data: any) => {
-              const tableEndY = data.cursor.y;
-              const textY = tableEndY + 6;
-
-              doc.setFont('helvetica', 'bold');
-              doc.setFontSize(9);
-              doc.text('Gesamtstunden', margin + offsetX, textY);
-
-              const totalHoursText = totalHours.toFixed(2).replace('.', ',');
-              doc.text(totalHoursText, offsetX + a5Width - margin, textY, { align: 'right' });
-          }
+          margin: { left: leftMargin },
+          tableWidth: tableWidth,
       });
 
-      const pageHeight = doc.internal.pageSize.getHeight();
-      doc.setFontSize(8);
-      doc.text(
-          'Stefan Rebelein Sanitär GmbH, Martin-Behaim-Str. 6, 90765 Fürth',
-          offsetX + a5Width / 2,
-          pageHeight - margin + 5,
-          { align: 'center' }
-      );
+      // Footer (Unterschrift)
+      const tableEndY = (doc as any).lastAutoTable.finalY;
+      const signatureY = tableEndY + 20;
+      const signatureX1 = leftMargin;
+      const signatureX2 = offsetX + a5Width - sideMargin;
+
+      doc.line(signatureX1, signatureY, signatureX1 + 40, signatureY);
+      doc.text('Unterschrift', signatureX1, signatureY + 5);
+
+      doc.line(signatureX2 - 40, signatureY, signatureX2, signatureY);
+      doc.text('Unterschrift', signatureX2, signatureY + 5, { align: 'right' });
   };
 
   const handleDownloadPdf = async () => {
@@ -244,16 +236,19 @@ export function TimesheetApp() {
     
     setIsDownloading(true);
 
-    const dateArray: Date[] = [];
-    let currentDateIterator = new Date(downloadStartDate);
-    while (currentDateIterator <= downloadEndDate) {
-        dateArray.push(new Date(currentDateIterator));
-        currentDateIterator.setDate(currentDateIterator.getDate() + 1);
+    const entriesInDateRange = allEntries.filter(entry => {
+        const entryDate = new Date(entry.date);
+        return entryDate >= downloadStartDate && entryDate <= downloadEndDate;
+    });
+
+    if (entriesInDateRange.length === 0) {
+        alert("Im ausgewählten Zeitraum wurden keine Einträge gefunden.");
+        setIsDownloading(false);
+        return;
     }
 
     const entriesByDate = new Map<string, TimeEntry[]>();
-    allEntries.forEach(entry => {
-        // Normalize date to avoid timezone issues when grouping
+    entriesInDateRange.forEach(entry => {
         const entryDate = new Date(entry.date);
         entryDate.setMinutes(entryDate.getMinutes() + entryDate.getTimezoneOffset());
         const dateStr = entryDate.toISOString().split('T')[0];
@@ -263,23 +258,25 @@ export function TimesheetApp() {
         entriesByDate.get(dateStr)!.push(entry);
     });
 
+    const datesWithEntries = Array.from(entriesByDate.keys()).sort();
+
     const doc = new jsPDF('l', 'mm', 'a4');
     const userName = authUser.user_metadata.full_name || authUser.email;
     const a5Width = 148.5;
 
-    for (let i = 0; i < dateArray.length; i += 2) {
+    for (let i = 0; i < datesWithEntries.length; i += 2) {
         if (i > 0) {
             doc.addPage();
         }
 
-        const date1 = dateArray[i];
-        const date1Str = date1.toISOString().split('T')[0];
+        const date1Str = datesWithEntries[i];
+        const date1 = new Date(date1Str);
         const entries1 = entriesByDate.get(date1Str) || [];
         drawDayOnPage(doc, date1, entries1, userName, 0);
 
-        if (i + 1 < dateArray.length) {
-            const date2 = dateArray[i + 1];
-            const date2Str = date2.toISOString().split('T')[0];
+        if (i + 1 < datesWithEntries.length) {
+            const date2Str = datesWithEntries[i + 1];
+            const date2 = new Date(date2Str);
             const entries2 = entriesByDate.get(date2Str) || [];
 
             doc.setDrawColor(200); // light grey for the cutting line
