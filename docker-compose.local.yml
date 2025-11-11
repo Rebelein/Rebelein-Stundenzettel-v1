@@ -1,42 +1,12 @@
 services:
   app:
-    image: ghcr.io/rebelein/rebelein-stundenzettel:latest
+    image: docker.io/bbging/stundenzettel:latest
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3002:3000"
     environment:
-      - NEXT_PUBLIC_SUPABASE_URL=http://localhost:8000
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
-    depends_on:
-      - supabase-db
-      - supabase-studio
-
-  supabase-db:
-    image: supabase/postgres:15.1.0.118
-    restart: unless-stopped
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=postgres
-    volumes:
-      - ./supabase/volumes/db:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
-  supabase-studio:
-    image: supabase/studio:20240325
-    restart: unless-stopped
-    environment:
-      - SUPABASE_URL=http://localhost:8000
-      - SUPABASE_DB_HOST=supabase-db
-      - SUPABASE_DB_PORT=5432
-      - SUPABASE_DB_USER=postgres
-      - SUPABASE_DB_PASSWORD=postgres
-      - SUPABASE_DB_NAME=postgres
-    ports:
-      - "5433:3000"
-    depends_on:
-      - supabase-db
+      - NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 
 volumes:
   db:
