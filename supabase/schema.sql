@@ -34,3 +34,18 @@ CREATE POLICY "Allow full access to own target hours"
 ON target_hours
 FOR ALL
 USING (auth.uid() = user_id);
+
+-- Function to create a new target_hours entry for a new user
+create function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.target_hours (user_id, monday, tuesday, wednesday, thursday, friday)
+  values (new.id, 8, 8, 8, 8, 8);
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger to call the function when a new user is created
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
