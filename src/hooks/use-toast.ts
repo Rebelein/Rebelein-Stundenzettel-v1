@@ -56,22 +56,12 @@ export const reducer = (state: State, action: any): State => {
 
     case "DISMISS_TOAST": {
       const { toastId } = action
-
-      // Find the toast to dismiss
-      const toast = state.toasts.find((t) => t.id === toastId)
-
-      if (toast) {
-        addToRemoveQueue(toastId)
-      } else {
-        return {
-          ...state,
-          toasts: state.toasts.map((t) =>
-            t.id === toastId ? { ...t, open: false } : t
-          ),
-        }
+      return {
+        ...state,
+        toasts: state.toasts.map((t) =>
+          t.id === toastId ? { ...t, open: false } : t
+        ),
       }
-
-      return state
     }
     case "REMOVE_TOAST":
       if (action.toastId === undefined) {
