@@ -49,6 +49,7 @@ firestore-debug.log
 # custom
 *.log
 public/sw.js
+public/sw*.js
 public/workbox-*.js
 playwright-report/
 test-results/
