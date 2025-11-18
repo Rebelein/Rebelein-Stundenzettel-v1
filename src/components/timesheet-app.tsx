@@ -145,9 +145,11 @@ export function TimesheetApp() {
     }
   };
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   return (
-    <div className="flex min-h-screen">
-      <aside className="w-64 bg-gray-50 p-4 border-r fixed h-full flex flex-col print-hidden">
+    <div className="flex min-h-screen bg-background">
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-card p-4 border-r flex-col print-hidden transition-transform duration-300 ease-in-out md:flex md:translate-x-0 ${isSidebarOpen ? 'flex translate-x-0' : 'hidden -translate-x-full'}`}>
         <h1 className="text-2xl font-headline font-bold mb-8">Stundenzettel</h1>
         <nav className="flex flex-col space-y-2">
           <Button variant={view === 'new-entry' ? 'secondary' : 'ghost'} onClick={() => setView('new-entry')} className="justify-start"><FilePlus className="mr-2 h-4 w-4" />Neuer Eintrag</Button>
@@ -159,9 +161,14 @@ export function TimesheetApp() {
           <Button variant="ghost" onClick={signOut} className="w-full justify-start"><LogOut className="mr-2 h-4 w-4" />Abmelden</Button>
         </div>
       </aside>
-      <main className="flex-1 ml-64 p-8">
+      <main className="flex-1 md:ml-64 p-4 md:p-8">
         <div className="flex items-center justify-between mb-8 print-hidden">
-          <h2 className="text-2xl font-bold">{user?.user_metadata.full_name}</h2>
+          <div className="flex items-center">
+            <Button variant="outline" size="icon" className="md:hidden mr-4" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+              <ChevronRight className={`h-4 w-4 transition-transform duration-300 ${isSidebarOpen ? 'rotate-180' : ''}`} />
+            </Button>
+            <h2 className="text-2xl font-bold">{user?.user_metadata.full_name}</h2>
+          </div>
           <div className="flex items-center space-x-2">
             <Button variant="outline" size="icon" onClick={() => handleDateChange(subMonths(currentDate, 1))}>
               <ChevronLeft className="h-4 w-4" />
