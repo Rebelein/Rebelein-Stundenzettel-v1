@@ -17,6 +17,7 @@ import {
   ChevronRight,
   FilePlus,
   LogOut,
+  PanelLeft,
   User as UserIcon,
 } from 'lucide-react';
 import { addMonths, subMonths, format } from 'date-fns';
@@ -148,7 +149,7 @@ export function TimesheetApp() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background overflow-x-hidden">
       {isSidebarOpen && <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setIsSidebarOpen(false)} />}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-card p-4 border-r flex flex-col print-hidden transition-transform duration-300 ease-in-out md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <h1 className="text-2xl font-headline font-bold mb-8">Stundenzettel</h1>
@@ -166,7 +167,7 @@ export function TimesheetApp() {
         <div className="flex items-center justify-between mb-8 print-hidden">
           <div className="flex items-center">
             <Button variant="outline" size="icon" className="md:hidden mr-4" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
-              <ChevronRight className={`h-4 w-4 transition-transform duration-300 ${isSidebarOpen ? 'rotate-180' : ''}`} />
+              <PanelLeft className="h-4 w-4" />
             </Button>
             <h2 className="text-2xl font-bold">{user?.user_metadata.full_name}</h2>
           </div>
