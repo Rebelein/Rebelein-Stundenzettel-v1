@@ -135,7 +135,7 @@ export function TimesheetApp() {
       case 'new-entry':
         return <TimeEntryForm onEntryCreated={fetchEntries} />;
       case 'monthly-overview':
-        return <MonthlyOverview entries={entries} onEntrySelect={handleEntrySelect} currentDate={currentDate} />;
+        return <MonthlyOverview entries={entries} onEntrySelect={handleEntrySelect} onEntryDelete={handleEntryDelete} currentDate={currentDate} />;
       case 'analysis':
         return enrichedUser && <WorkHoursAnalysis entries={entries} user={enrichedUser} currentDate={currentDate} />;
       case 'profile':

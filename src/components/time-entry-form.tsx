@@ -55,7 +55,7 @@ export function TimeEntryForm({ onEntryCreated }: TimeEntryFormProps) {
     const { error } = await supabase.from('time_entries').insert({
       ...values,
       user_id: user.id,
-      date: values.date.toISOString().slice(0, 10), // Format date to YYYY-MM-DD
+      date: new Date(values.date.getTime() - (values.date.getTimezoneOffset() * 60000)).toISOString().slice(0, 10),
     });
 
     if (error) {

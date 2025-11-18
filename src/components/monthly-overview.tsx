@@ -9,11 +9,13 @@ interface MonthlyOverviewProps {
   entries: TimeEntry[];
   currentDate: Date;
   onEntrySelect: (entry: TimeEntry) => void;
+  onEntryDelete: (entryId: string) => void;
 }
 
 export function MonthlyOverview({
   entries,
   onEntrySelect,
+  onEntryDelete,
 }: MonthlyOverviewProps) {
   
   const daysWithEntries = useMemo(() => {
@@ -42,10 +44,12 @@ export function MonthlyOverview({
         {sortedDays.map(day => {
           const dayEntries = entries.filter(e => e.date === day.toISOString().split('T')[0]);
           return (
-            <Card key={day.toISOString()} onClick={() => onEntrySelect(dayEntries[0])} className="cursor-pointer">
+            <Card key={day.toISOString()}>
               <TimesheetDay
                 date={day}
                 entries={dayEntries}
+                onEntrySelect={onEntrySelect}
+                onEntryDelete={onEntryDelete}
               />
             </Card>
           )
