@@ -163,7 +163,7 @@ export function TimesheetApp() {
           <Button variant="ghost" onClick={signOut} className="w-full justify-start"><LogOut className="mr-2 h-4 w-4" />Abmelden</Button>
         </div>
       </aside>
-      <main className="flex-1 md:ml-64 p-4 md:p-8">
+      <main className="flex-1 md:ml-64 p-6 md:p-8 overflow-x-hidden">
         <div className="flex items-center justify-between mb-8 print-hidden">
           <div className="flex items-center">
             <Button variant="outline" size="icon" className="md:hidden mr-4" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
