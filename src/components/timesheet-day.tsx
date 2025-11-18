@@ -36,9 +36,11 @@ import {
 interface TimesheetDayProps {
   date: Date;
   entries: TimeEntry[];
+  onEntrySelect: (entry: TimeEntry) => void;
+  onEntryDelete: (entryId: string) => void;
 }
 
-export function TimesheetDay({ date, entries }: TimesheetDayProps) {
+export function TimesheetDay({ date, entries, onEntrySelect, onEntryDelete }: TimesheetDayProps) {
   const totalHours = entries.reduce((sum, entry) => sum + entry.hours, 0);
 
   const formattedDate = date.toLocaleDateString('de-DE', {
@@ -64,8 +66,9 @@ export function TimesheetDay({ date, entries }: TimesheetDayProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-3/4">Kunde / Tätigkeit</TableHead>
+              <TableHead>Kunde / Tätigkeit</TableHead>
               <TableHead className="text-right">Stunden</TableHead>
+              <TableHead className="text-right w-20">Aktionen</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -74,6 +77,32 @@ export function TimesheetDay({ date, entries }: TimesheetDayProps) {
                 <TableRow key={entry.id}>
                   <TableCell>{entry.customer}</TableCell>
                   <TableCell className="text-right">{entry.hours.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="ghost" size="icon" onClick={() => onEntrySelect(entry)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Diese Aktion kann nicht rückgängig gemacht werden. Dadurch wird Ihr Zeiteintrag dauerhaft gelöscht.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => onEntryDelete(entry.id)}>Löschen</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </TableCell>
                 </TableRow>
               ))
             ) : (
@@ -88,6 +117,7 @@ export function TimesheetDay({ date, entries }: TimesheetDayProps) {
              <TableRow>
                 <TableCell className="font-bold">Gesamt</TableCell>
                 <TableCell className="text-right font-bold">{totalHours.toFixed(2)}</TableCell>
+                <TableCell></TableCell>
             </TableRow>
           </TableFooter>
         </Table>
