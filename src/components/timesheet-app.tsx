@@ -149,13 +149,14 @@ export function TimesheetApp() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-card p-4 border-r flex-col print-hidden transition-transform duration-300 ease-in-out md:flex md:translate-x-0 ${isSidebarOpen ? 'flex translate-x-0' : 'hidden -translate-x-full'}`}>
+      {isSidebarOpen && <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setIsSidebarOpen(false)} />}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-card p-4 border-r flex flex-col print-hidden transition-transform duration-300 ease-in-out md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <h1 className="text-2xl font-headline font-bold mb-8">Stundenzettel</h1>
         <nav className="flex flex-col space-y-2">
-          <Button variant={view === 'new-entry' ? 'secondary' : 'ghost'} onClick={() => setView('new-entry')} className="justify-start"><FilePlus className="mr-2 h-4 w-4" />Neuer Eintrag</Button>
-          <Button variant={view === 'monthly-overview' ? 'secondary' : 'ghost'} onClick={() => setView('monthly-overview')} className="justify-start"><Archive className="mr-2 h-4 w-4" />Monatsübersicht</Button>
-          <Button variant={view === 'analysis' ? 'secondary' : 'ghost'} onClick={() => setView('analysis')} className="justify-start"><BarChart className="mr-2 h-4 w-4" />Analyse</Button>
-          <Button variant={view === 'profile' ? 'secondary' : 'ghost'} onClick={() => setView('profile')} className="justify-start"><UserIcon className="mr-2 h-4 w-4" />Profil</Button>
+          <Button variant={view === 'new-entry' ? 'secondary' : 'ghost'} onClick={() => { setView('new-entry'); setIsSidebarOpen(false); }} className="justify-start"><FilePlus className="mr-2 h-4 w-4" />Neuer Eintrag</Button>
+          <Button variant={view === 'monthly-overview' ? 'secondary' : 'ghost'} onClick={() => { setView('monthly-overview'); setIsSidebarOpen(false); }} className="justify-start"><Archive className="mr-2 h-4 w-4" />Monatsübersicht</Button>
+          <Button variant={view === 'analysis' ? 'secondary' : 'ghost'} onClick={() => { setView('analysis'); setIsSidebarOpen(false); }} className="justify-start"><BarChart className="mr-2 h-4 w-4" />Analyse</Button>
+          <Button variant={view === 'profile' ? 'secondary' : 'ghost'} onClick={() => { setView('profile'); setIsSidebarOpen(false); }} className="justify-start"><UserIcon className="mr-2 h-4 w-4" />Profil</Button>
         </nav>
         <div className="mt-auto">
           <Button variant="ghost" onClick={signOut} className="w-full justify-start"><LogOut className="mr-2 h-4 w-4" />Abmelden</Button>
